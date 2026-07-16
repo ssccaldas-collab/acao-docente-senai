@@ -1,0 +1,50 @@
+import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import { signToken } from '@/lib/auth';
+import { getDB } from '@/lib/db';
+
+export async function POST(req: NextRequest) {
+  try {
+    const { registration_number, email, password } = await req.json();
+    const identifier = (registration_number || email || '').trim();
+
+    if (!identifier || !password) {
+      return NextResponse.json({ error: 'Matrícula/e-mail e senha são obrigatórios' }, { status: 400 });
+    }
+
+    const sql = getDB();
+    const users = await sql`
+      SELECT id, name, registration_number, email, password_hash, role, active
+      FROM users
+      WHERE registration_number = ${identifier} OR LOWER(email) = LOWER(${identifier})
+      LIMIT 1
+    `;
+
+    if (users.length === 0 || !users[0].active) {
+      return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 });
+    }
+
+    const user = users[0];
+    const valid = await bcrypt.compare(password, user.password_hash);
+
+    if (!valid) {
+      return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 });
+    }
+
+    const token = await signToken({ id: user.id, name: user.name, email: user.email, role: user.role });
+
+    const response = NextResponse.json({ role: user.role, name: user.name });
+    response.cookies.set('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 8,
+      path: '/',
+    });
+
+    return response;
+  } catch (err) {
+    console.error('Login error:', err);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
+  }
+}

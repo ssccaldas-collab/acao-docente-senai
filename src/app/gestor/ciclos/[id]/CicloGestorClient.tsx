@@ -1,0 +1,390 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Header } from '@/components/Header';
+import { QuestionChecklist } from '@/components/QuestionChecklist';
+import { DocumentsPanel } from '@/components/DocumentsPanel';
+import { ArrowLeft, FileText, Eye, MessageSquare, RotateCcw, CheckCircle2, Circle, ChevronDown, ChevronUp } from 'lucide-react';
+import type { Role } from '@/lib/auth';
+import { STAGE1_DOCUMENTATION_QUESTIONS, STAGE2_CLASSROOM_OBSERVATION_QUESTIONS, type FormAnswers } from '@/lib/formQuestions';
+
+export interface CycleDetail {
+  id: number;
+  current_stage: number;
+  status: 'nao_iniciado' | 'em_andamento' | 'concluido' | 'atrasado' | 'cancelado';
+  stage1_deadline: string | Date | null;
+  stage2_deadline: string | Date | null;
+  stage3_deadline: string | Date | null;
+  stage4_deadline: string | Date | null;
+  teacher_name: string;
+  manager_name: string | null;
+  semester_label: string;
+}
+
+const STEPS = [
+  { stage: 1, label: 'Documentação', icon: FileText },
+  { stage: 2, label: 'Observação de Aula', icon: Eye },
+  { stage: 3, label: 'Devolutiva', icon: MessageSquare },
+  { stage: 4, label: 'Réplica', icon: RotateCcw },
+];
+
+function fmtDate(d: string | Date | null) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+}
+
+function toDateInputValue(d: string | Date | null) {
+  if (!d) return '';
+  return new Date(d).toISOString().slice(0, 10);
+}
+
+interface StageReview {
+  answers: FormAnswers;
+  overall_comment: string | null;
+  observation_date?: string | null;
+  reviewed_by_name?: string;
+  observed_by_name?: string;
+}
+
+function ChecklistSection({
+  title, icon: Icon, questions, existing, onSave, saving, open, onToggle, showDate,
+}: {
+  title: string;
+  icon: typeof FileText;
+  questions: typeof STAGE1_DOCUMENTATION_QUESTIONS;
+  existing: StageReview | null;
+  onSave: (answers: FormAnswers, comment: string, date?: string) => void;
+  saving: boolean;
+  open: boolean;
+  onToggle: () => void;
+  showDate?: boolean;
+}) {
+  const [answers, setAnswers] = useState<FormAnswers>(existing?.answers ?? {});
+  const [comment, setComment] = useState(existing?.overall_comment ?? '');
+  const [date, setDate] = useState(toDateInputValue(existing?.observation_date ?? null));
+
+  function handleChange(id: string, value: string | number) {
+    setAnswers(a => ({ ...a, [id]: { value } }));
+  }
+
+  const respondedBy = existing?.reviewed_by_name ?? existing?.observed_by_name;
+
+  return (
+    <div style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', marginBottom: '1rem', overflow: 'hidden' }}>
+      <button onClick={onToggle} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 1.25rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+        <div style={{ width: 36, height: 36, borderRadius: '0.5rem', background: existing ? '#E8F5E9' : '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Icon size={17} color={existing ? '#2E7D32' : '#888'} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontWeight: 700, fontSize: '0.92rem', color: '#1A2344' }}>{title}</p>
+          <p style={{ fontSize: '0.75rem', color: '#888' }}>
+            {existing ? `Respondido${respondedBy ? ` por ${respondedBy}` : ''}` : 'Ainda não respondido'}
+          </p>
+        </div>
+        {existing && <span className="badge-concluido">RESPONDIDO</span>}
+        {open ? <ChevronUp size={18} color="#888" /> : <ChevronDown size={18} color="#888" />}
+      </button>
+
+      {open && (
+        <div style={{ padding: '0 1.25rem 1.25rem' }}>
+          {showDate && (
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Data da aula observada</label>
+              <input type="date" value={date} onChange={e => setDate(e.target.value)}
+                style={{ border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.55rem 0.75rem', fontSize: '0.85rem', outline: 'none' }} />
+            </div>
+          )}
+          <QuestionChecklist questions={questions} answers={answers} onChange={handleChange} disabled={saving} />
+          <div style={{ marginTop: '1rem' }}>
+            <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Comentário geral (opcional)</label>
+            <textarea value={comment} onChange={e => setComment(e.target.value)} rows={2}
+              style={{ width: '100%', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.6rem 0.75rem', fontSize: '0.85rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
+          </div>
+          <button onClick={() => onSave(answers, comment, date)} disabled={saving} className="btn-primary" style={{ marginTop: '1rem' }}>
+            {saving ? 'Salvando...' : existing ? 'Salvar alterações' : 'Salvar e avançar'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface FeedbackSession {
+  session_date: string | Date;
+  notes: string;
+  teacher_acknowledged: boolean;
+  applied_by_name?: string;
+}
+
+function DevolutivaSection({ existing, onSave, saving, open, onToggle }: {
+  existing: FeedbackSession | null;
+  onSave: (sessionDate: string, notes: string) => void;
+  saving: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const [sessionDate, setSessionDate] = useState(toDateInputValue(existing?.session_date ?? null));
+  const [notes, setNotes] = useState(existing?.notes ?? '');
+
+  return (
+    <div style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', marginBottom: '1rem', overflow: 'hidden' }}>
+      <button onClick={onToggle} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 1.25rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+        <div style={{ width: 36, height: 36, borderRadius: '0.5rem', background: existing ? '#E8F5E9' : '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <MessageSquare size={17} color={existing ? '#2E7D32' : '#888'} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontWeight: 700, fontSize: '0.92rem', color: '#1A2344' }}>Etapa 3 — Devolutiva</p>
+          <p style={{ fontSize: '0.75rem', color: '#888' }}>
+            {existing ? `Registrada${existing.applied_by_name ? ` por ${existing.applied_by_name}` : ''} · ${existing.teacher_acknowledged ? 'docente ciente' : 'aguardando ciência do docente'}` : 'Ainda não registrada'}
+          </p>
+        </div>
+        {existing && <span className="badge-concluido">REGISTRADA</span>}
+        {open ? <ChevronUp size={18} color="#888" /> : <ChevronDown size={18} color="#888" />}
+      </button>
+
+      {open && (
+        <div style={{ padding: '0 1.25rem 1.25rem' }}>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Data da devolutiva *</label>
+            <input type="date" value={sessionDate} onChange={e => setSessionDate(e.target.value)}
+              style={{ border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.55rem 0.75rem', fontSize: '0.85rem', outline: 'none' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Apontamentos passados ao docente *</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={5}
+              placeholder="Descreva os pontos discutidos na devolutiva presencial..."
+              style={{ width: '100%', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.6rem 0.75rem', fontSize: '0.85rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
+          </div>
+          <button onClick={() => onSave(sessionDate, notes)} disabled={saving} className="btn-primary" style={{ marginTop: '1rem' }}>
+            {saving ? 'Salvando...' : existing ? 'Salvar alterações' : 'Registrar devolutiva e avançar'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface ReplicaData {
+  final_result: string;
+  notes: string | null;
+  closed_by_name?: string;
+}
+
+const RESULT_LABELS: Record<string, { label: string; color: string; bg: string }> = {
+  adequado: { label: 'Adequado', color: '#2E7D32', bg: '#E8F5E9' },
+  parcialmente_adequado: { label: 'Parcialmente adequado', color: '#F57F17', bg: '#FFF8E1' },
+  inadequado: { label: 'Inadequado', color: '#C8102E', bg: '#FFEBEE' },
+};
+
+function ReplicaSection({ existing, onSave, saving, open, onToggle }: {
+  existing: ReplicaData | null;
+  onSave: (finalResult: string, notes: string) => void;
+  saving: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const [finalResult, setFinalResult] = useState(existing?.final_result ?? 'adequado');
+  const [notes, setNotes] = useState(existing?.notes ?? '');
+
+  return (
+    <div style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', marginBottom: '1rem', overflow: 'hidden' }}>
+      <button onClick={onToggle} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 1.25rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+        <div style={{ width: 36, height: 36, borderRadius: '0.5rem', background: existing ? '#E8F5E9' : '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <RotateCcw size={17} color={existing ? '#2E7D32' : '#888'} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontWeight: 700, fontSize: '0.92rem', color: '#1A2344' }}>Etapa 4 — Réplica / Fechamento</p>
+          <p style={{ fontSize: '0.75rem', color: '#888' }}>
+            {existing ? `Ciclo fechado${existing.closed_by_name ? ` por ${existing.closed_by_name}` : ''}` : 'Ciclo ainda não fechado'}
+          </p>
+        </div>
+        {existing && <span className={existing.final_result === 'inadequado' ? 'badge-atrasado' : 'badge-concluido'}>{RESULT_LABELS[existing.final_result]?.label ?? existing.final_result}</span>}
+        {open ? <ChevronUp size={18} color="#888" /> : <ChevronDown size={18} color="#888" />}
+      </button>
+
+      {open && (
+        <div style={{ padding: '0 1.25rem 1.25rem' }}>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Resultado final *</label>
+            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+              {Object.entries(RESULT_LABELS).map(([value, meta]) => (
+                <button key={value} type="button" onClick={() => setFinalResult(value)}
+                  style={{
+                    padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '0.85rem', fontWeight: 700,
+                    border: finalResult === value ? `2px solid ${meta.color}` : '1px solid #E0E0E0',
+                    background: finalResult === value ? meta.bg : 'white',
+                    color: finalResult === value ? meta.color : '#888',
+                    cursor: 'pointer',
+                  }}>
+                  {meta.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Observações finais (opcional)</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
+              style={{ width: '100%', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.6rem 0.75rem', fontSize: '0.85rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
+          </div>
+          <button onClick={() => onSave(finalResult, notes)} disabled={saving} className="btn-primary" style={{ marginTop: '1rem' }}>
+            {saving ? 'Salvando...' : existing ? 'Salvar alterações' : 'Fechar ciclo'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function CicloGestorClient({ userName, role, cycle }: { userName: string; role: Role; cycle: CycleDetail }) {
+  const router = useRouter();
+  const deadlines = [cycle.stage1_deadline, cycle.stage2_deadline, cycle.stage3_deadline, cycle.stage4_deadline];
+  const isConcluded = cycle.status === 'concluido';
+
+  const [stage1, setStage1] = useState<StageReview | null>(null);
+  const [stage2, setStage2] = useState<StageReview | null>(null);
+  const [stage3, setStage3] = useState<FeedbackSession | null>(null);
+  const [stage4, setStage4] = useState<ReplicaData | null>(null);
+  const [openSection, setOpenSection] = useState<number>(cycle.current_stage);
+  const [saving, setSaving] = useState<number | null>(null);
+  const [error, setError] = useState('');
+  const [version, setVersion] = useState(0);
+
+  async function load() {
+    const [s1, s2, s3, s4] = await Promise.all([
+      fetch(`/api/ciclos/${cycle.id}/etapa1`).then(r => r.json()),
+      fetch(`/api/ciclos/${cycle.id}/etapa2`).then(r => r.json()),
+      fetch(`/api/ciclos/${cycle.id}/etapa3`).then(r => r.json()),
+      fetch(`/api/ciclos/${cycle.id}/etapa4`).then(r => r.json()),
+    ]);
+    setStage1(s1); setStage2(s2); setStage3(s3); setStage4(s4);
+    setVersion(v => v + 1);
+  }
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- data fetch on mount, setState happens inside the async callback, not synchronously
+  useEffect(() => { load(); }, []);
+
+  async function submit(stage: number, url: string, body: unknown) {
+    setSaving(stage); setError('');
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await res.json();
+    setSaving(null);
+    if (!res.ok) { setError(data.error); return; }
+    load();
+    router.refresh();
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
+      <Header userName={userName} role={role} />
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+          <button onClick={() => router.push('/gestor')}
+            style={{ background: 'white', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.4rem', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+            <ArrowLeft size={18} color="#555" />
+          </button>
+          <div>
+            <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1A2344' }}>{cycle.teacher_name}</h1>
+            <p style={{ fontSize: '0.8rem', color: '#888' }}>
+              Semestre {cycle.semester_label} {cycle.manager_name ? `· Gestor: ${cycle.manager_name}` : ''}
+            </p>
+          </div>
+        </div>
+
+        {/* Stepper */}
+        <div style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', padding: '1.5rem', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            {STEPS.map((step, i) => {
+              const Icon = step.icon;
+              const done = isConcluded || step.stage < cycle.current_stage;
+              const activeStep = !isConcluded && step.stage === cycle.current_stage;
+              const color = done ? '#2E7D32' : activeStep ? '#C8102E' : '#bbb';
+              return (
+                <div key={step.stage} style={{ flex: 1, textAlign: 'center', position: 'relative' }}>
+                  {i > 0 && (
+                    <div style={{ position: 'absolute', top: 18, left: '-50%', width: '100%', height: 2, background: done ? '#2E7D32' : '#E0E0E0', zIndex: 0 }} />
+                  )}
+                  <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
+                    <div style={{
+                      width: 38, height: 38, borderRadius: '50%',
+                      background: done ? '#E8F5E9' : activeStep ? '#FFEBEE' : '#F5F5F5',
+                      border: `2px solid ${color}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {done ? <CheckCircle2 size={18} color={color} /> : activeStep ? <Icon size={16} color={color} /> : <Circle size={14} color={color} />}
+                    </div>
+                    <p style={{ fontSize: '0.75rem', fontWeight: activeStep ? 700 : 600, color: activeStep ? '#1A2344' : '#888' }}>{step.label}</p>
+                    <p style={{ fontSize: '0.68rem', color: '#aaa' }}>Prazo: {fmtDate(deadlines[step.stage - 1])}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {isConcluded && stage4 && (
+          <div style={{
+            background: RESULT_LABELS[stage4.final_result]?.bg ?? '#F5F5F5',
+            border: `1px solid ${RESULT_LABELS[stage4.final_result]?.color ?? '#ccc'}`,
+            borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.5rem',
+          }}>
+            <p style={{ fontWeight: 700, color: RESULT_LABELS[stage4.final_result]?.color ?? '#555' }}>
+              Ciclo concluído — Resultado final: {RESULT_LABELS[stage4.final_result]?.label ?? stage4.final_result}
+            </p>
+          </div>
+        )}
+
+        {error && (
+          <div style={{ background: '#FFEBEE', border: '1px solid #FFCDD2', borderRadius: '0.5rem', padding: '0.75rem 1rem', marginBottom: '1rem', color: '#C62828', fontSize: '0.85rem' }}>
+            {error}
+          </div>
+        )}
+
+        <DocumentsPanel cycleId={cycle.id} canUpload={false} canDelete={true} />
+
+        <ChecklistSection
+          key={`s1-${version}`}
+          title="Etapa 1 — Documentação"
+          icon={FileText}
+          questions={STAGE1_DOCUMENTATION_QUESTIONS}
+          existing={stage1}
+          onSave={(answers, comment) => submit(1, `/api/ciclos/${cycle.id}/etapa1`, { answers, overall_comment: comment })}
+          saving={saving === 1}
+          open={openSection === 1}
+          onToggle={() => setOpenSection(s => s === 1 ? 0 : 1)}
+        />
+
+        <ChecklistSection
+          key={`s2-${version}`}
+          title="Etapa 2 — Observação de Aula"
+          icon={Eye}
+          questions={STAGE2_CLASSROOM_OBSERVATION_QUESTIONS}
+          existing={stage2}
+          onSave={(answers, comment, date) => submit(2, `/api/ciclos/${cycle.id}/etapa2`, { answers, overall_comment: comment, observation_date: date })}
+          saving={saving === 2}
+          open={openSection === 2}
+          onToggle={() => setOpenSection(s => s === 2 ? 0 : 2)}
+          showDate
+        />
+
+        <DevolutivaSection
+          key={`s3-${version}`}
+          existing={stage3}
+          onSave={(sessionDate, notes) => submit(3, `/api/ciclos/${cycle.id}/etapa3`, { session_date: sessionDate, notes })}
+          saving={saving === 3}
+          open={openSection === 3}
+          onToggle={() => setOpenSection(s => s === 3 ? 0 : 3)}
+        />
+
+        <ReplicaSection
+          key={`s4-${version}`}
+          existing={stage4}
+          onSave={(finalResult, notes) => submit(4, `/api/ciclos/${cycle.id}/etapa4`, { final_result: finalResult, notes })}
+          saving={saving === 4}
+          open={openSection === 4}
+          onToggle={() => setOpenSection(s => s === 4 ? 0 : 4)}
+        />
+      </div>
+    </div>
+  );
+}
