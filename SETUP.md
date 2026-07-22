@@ -35,10 +35,14 @@ curl -X POST http://localhost:3000/api/init
 
 ### 6. Login padrão do coordenador
 
-- **E-mail:** coordenador@senai.br
+- **NIF/e-mail:** coordenador@senai.br
 - **Senha:** senai@2024
 
-**Troque a senha assim que possível (cadastre um novo coordenador e desative o padrão).**
+No primeiro acesso (de qualquer usuário, incluindo esse coordenador padrão), o sistema **obriga a troca de senha** antes de liberar o restante das telas.
+
+### 7. Login por NIF
+
+Assim como no sistema irmão `patrimonio`, o login é feito pelo **NIF** (campo `registration_number` no banco) cadastrado para cada usuário — o e-mail continua funcionando como alternativa de login. Ao cadastrar um docente/OPP/coordenador em "Usuários", defina uma senha inicial; esse usuário será obrigado a trocá-la no primeiro login.
 
 ## Executar o sistema
 

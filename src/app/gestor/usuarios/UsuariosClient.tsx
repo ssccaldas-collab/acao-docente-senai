@@ -19,7 +19,7 @@ interface UserRecord {
 const emptyForm = { name: '', registration_number: '', email: '', password: '', role: 'docente' as Role };
 
 const roleMeta: Record<Role, { label: string; icon: typeof User; color: string; bg: string }> = {
-  coordenador: { label: 'Coordenadores', icon: ShieldCheck, color: '#C8102E', bg: '#FFEBEE' },
+  coordenador: { label: 'Coordenadores', icon: ShieldCheck, color: '#4338CA', bg: '#FFEBEE' },
   oppp: { label: 'OPPs', icon: ShieldCheck, color: '#1565C0', bg: '#E3F2FD' },
   docente: { label: 'Docentes', icon: GraduationCap, color: '#2E7D32', bg: '#E8F5E9' },
 };
@@ -125,14 +125,14 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
       {editUser && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div style={{ background: 'white', borderRadius: '1rem', padding: '1.5rem', width: '100%', maxWidth: 560, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3 style={{ fontWeight: 700, fontSize: '1rem', color: '#1A2344', marginBottom: '1.25rem' }}>Editar Usuário — {editUser.name}</h3>
+            <h3 style={{ fontWeight: 700, fontSize: '1rem', color: '#211C5C', marginBottom: '1.25rem' }}>Editar Usuário — {editUser.name}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
               <div>
                 <label style={labelStyle}>Nome completo *</label>
                 <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} style={inputStyle} />
               </div>
               <div>
-                <label style={labelStyle}>Matrícula</label>
+                <label style={labelStyle}>NIF</label>
                 <input value={editForm.registration_number} onChange={e => setEditForm(f => ({ ...f, registration_number: e.target.value }))} style={inputStyle} />
               </div>
               <div style={{ position: 'relative' }}>
@@ -156,7 +156,7 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
                 </select>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.4rem' }}>
-                <input type="checkbox" checked={editForm.active} onChange={e => setEditForm(f => ({ ...f, active: e.target.checked }))} style={{ accentColor: '#C8102E', cursor: 'pointer' }} />
+                <input type="checkbox" checked={editForm.active} onChange={e => setEditForm(f => ({ ...f, active: e.target.checked }))} style={{ accentColor: '#4338CA', cursor: 'pointer' }} />
                 <label style={{ fontSize: '0.85rem', color: '#333' }}>Usuário ativo</label>
               </div>
             </div>
@@ -178,8 +178,8 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
               <ArrowLeft size={18} color="#555" />
             </button>
             <div>
-              <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1A2344', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Users size={20} color="#C8102E" /> Usuários
+              <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#211C5C', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Users size={20} color="#4338CA" /> Usuários
               </h1>
               <p style={{ fontSize: '0.8rem', color: '#888' }}>
                 {users.filter(u => u.role === 'docente').length} docente(s) • {users.filter(u => u.role === 'oppp').length} OPP(s) • {users.filter(u => u.role === 'coordenador').length} coordenador(es)
@@ -193,14 +193,14 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
 
         {showForm && (
           <div style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', padding: '1.25rem', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1A2344', marginBottom: '1rem' }}>Novo Usuário</h3>
+            <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#211C5C', marginBottom: '1rem' }}>Novo Usuário</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
               <div>
                 <label style={labelStyle}>Nome completo *</label>
                 <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Nome completo" style={inputStyle} />
               </div>
               <div>
-                <label style={labelStyle}>Matrícula (opcional)</label>
+                <label style={labelStyle}>NIF (opcional)</label>
                 <input value={form.registration_number} onChange={e => setForm(f => ({ ...f, registration_number: e.target.value }))} placeholder="Ex: 1234567" style={inputStyle} />
               </div>
               <div style={{ position: 'relative' }}>
@@ -236,7 +236,7 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
 
         <div style={{ position: 'relative', marginBottom: '1.25rem' }}>
           <Search size={15} color="#999" style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)' }} />
-          <input type="text" placeholder="Buscar por nome, matrícula ou e-mail..." value={search} onChange={e => setSearch(e.target.value)}
+          <input type="text" placeholder="Buscar por nome, NIF ou e-mail..." value={search} onChange={e => setSearch(e.target.value)}
             style={{ width: '100%', background: 'white', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.6rem 0.75rem 0.6rem 2.2rem', fontSize: '0.88rem', outline: 'none' }} />
         </div>
 
@@ -262,7 +262,7 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
                             <Icon size={18} color={meta.color} />
                           </div>
                           <div style={{ minWidth: 0 }}>
-                            <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1A2344' }}>{u.name}</p>
+                            <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#211C5C' }}>{u.name}</p>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.1rem', flexWrap: 'wrap' }}>
                               {u.registration_number && (
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.75rem', color: '#1565C0', fontWeight: 600 }}>

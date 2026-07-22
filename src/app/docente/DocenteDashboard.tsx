@@ -46,7 +46,7 @@ export function DocenteDashboard({ userName }: { userName: string }) {
     <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
       <Header userName={userName} role="docente" />
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1.5rem' }}>
-        <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#1A2344' }}>Minha Ação Docente</h1>
+        <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#211C5C' }}>Minha Ação Docente</h1>
         <p style={{ color: '#666', fontSize: '0.88rem', marginTop: '0.2rem', marginBottom: '1.5rem' }}>
           Acompanhe o andamento da sua avaliação semestral
         </p>
@@ -59,7 +59,7 @@ export function DocenteDashboard({ userName }: { userName: string }) {
               <div
                 onClick={() => router.push(`/docente/ciclos/${current.id}`)}
                 style={{
-                  background: 'linear-gradient(135deg, #1A2344 0%, #0D1628 100%)',
+                  background: 'linear-gradient(135deg, #211C5C 0%, #130F35 100%)',
                   borderRadius: '1rem', padding: '1.75rem 2rem', marginBottom: '2rem', cursor: 'pointer',
                   boxShadow: '0 8px 24px rgba(13,22,40,0.25)',
                 }}>
@@ -104,7 +104,7 @@ export function DocenteDashboard({ userName }: { userName: string }) {
                           <Icon size={18} color={c.status === 'concluido' ? '#2E7D32' : '#888'} />
                         </div>
                         <div style={{ flex: 1 }}>
-                          <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1A2344' }}>Semestre {c.semester_label}</p>
+                          <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#211C5C' }}>Semestre {c.semester_label}</p>
                           <span className={c.status === 'concluido' ? 'badge-concluido' : 'badge-nao-iniciado'}>
                             {c.status === 'concluido' ? 'CONCLUÍDO' : c.status.replace('_', ' ').toUpperCase()}
                           </span>

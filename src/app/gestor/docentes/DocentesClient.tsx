@@ -40,8 +40,8 @@ export function DocentesClient({ userName, role }: { userName: string; role: Rol
             <ArrowLeft size={18} color="#555" />
           </button>
           <div>
-            <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1A2344', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <GraduationCap size={20} color="#C8102E" /> Docentes
+            <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#211C5C', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <GraduationCap size={20} color="#4338CA" /> Docentes
             </h1>
             <p style={{ fontSize: '0.8rem', color: '#888' }}>{docentes.length} docente(s) · histórico completo por docente</p>
           </div>
@@ -66,7 +66,7 @@ export function DocentesClient({ userName, role }: { userName: string; role: Rol
                   <GraduationCap size={18} color="#2E7D32" />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1A2344' }}>{d.name}</p>
+                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#211C5C' }}>{d.name}</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     {d.registration_number && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.75rem', color: '#1565C0', fontWeight: 600 }}>

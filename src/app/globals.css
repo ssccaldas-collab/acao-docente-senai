@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --senai-red: #C8102E;
-  --senai-red-dark: #A00D24;
+  --brand-primary: #4338CA;
+  --brand-primary-dark: #372AA8;
   --senai-green: #2E7D32;
   --senai-green-light: #E8F5E9;
-  --senai-navy: #1A2344;
+  --brand-navy: #211C5C;
   --background: #F5F5F5;
 }
 
@@ -20,7 +20,7 @@ body {
 }
 
 .btn-primary {
-  background-color: var(--senai-red);
+  background-color: var(--brand-primary);
   color: white;
   padding: 0.625rem 1.5rem;
   border-radius: 0.5rem;
@@ -34,7 +34,7 @@ body {
 }
 
 .btn-primary:hover {
-  background-color: var(--senai-red-dark);
+  background-color: var(--brand-primary-dark);
 }
 
 .btn-primary:disabled {
@@ -44,11 +44,11 @@ body {
 
 .btn-secondary {
   background-color: white;
-  color: var(--senai-red);
+  color: var(--brand-primary);
   padding: 0.625rem 1.5rem;
   border-radius: 0.5rem;
   font-weight: 600;
-  border: 2px solid var(--senai-red);
+  border: 2px solid var(--brand-primary);
   cursor: pointer;
   transition: all 0.2s;
   display: inline-flex;
@@ -57,7 +57,7 @@ body {
 }
 
 .btn-secondary:hover {
-  background-color: var(--senai-red);
+  background-color: var(--brand-primary);
   color: white;
 }
 

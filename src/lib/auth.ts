@@ -10,6 +10,7 @@ export interface JWTPayload {
   name: string;
   email: string;
   role: Role;
+  mustChangePassword: boolean;
 }
 
 export function isGestor(role: Role): boolean {

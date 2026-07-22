@@ -23,6 +23,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
+  if (
+    payload.mustChangePassword &&
+    pathname !== '/trocar-senha' &&
+    !pathname.startsWith('/api/')
+  ) {
+    return NextResponse.redirect(new URL('/trocar-senha', request.url));
+  }
+
   if (pathname.startsWith('/docente') && payload.role !== 'docente') {
     return NextResponse.redirect(new URL('/gestor', request.url));
   }

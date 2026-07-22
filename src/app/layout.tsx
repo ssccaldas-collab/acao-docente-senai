@@ -14,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Ação Docente SENAI" />
         <link rel="apple-touch-icon" href="/icon-app.png" />
-        <meta name="theme-color" content="#c8102e" />
+        <meta name="theme-color" content="#4338CA" />
       </head>
       <body style={{ minHeight: '100vh' }}>{children}</body>
     </html>

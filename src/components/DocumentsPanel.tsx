@@ -65,7 +65,7 @@ export function DocumentsPanel({ cycleId, canUpload, canDelete }: { cycleId: num
 
   return (
     <div style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', padding: '1.25rem', marginBottom: '1.5rem' }}>
-      <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1A2344', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#211C5C', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <FileText size={17} color="#1565C0" /> Documentos enviados
       </h3>
 
@@ -96,7 +96,7 @@ export function DocumentsPanel({ cycleId, canUpload, canDelete }: { cycleId: num
             <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0.8rem', background: '#F8F9FA', borderRadius: '0.5rem' }}>
               <FileText size={16} color="#1565C0" style={{ flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1A2344', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.file_name}</p>
+                <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#211C5C', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.file_name}</p>
                 <p style={{ fontSize: '0.72rem', color: '#999' }}>
                   {DOCUMENT_TYPES.find(t => t.value === d.document_type)?.label ?? d.document_type} · {fmtSize(d.size_bytes)} · {new Date(d.uploaded_at).toLocaleDateString('pt-BR')}
                 </p>

@@ -20,9 +20,11 @@ export async function initDB() {
       password_hash VARCHAR(255) NOT NULL,
       role VARCHAR(20) NOT NULL CHECK (role IN ('docente','oppp','coordenador')),
       active BOOLEAN DEFAULT TRUE,
+      must_change_password BOOLEAN NOT NULL DEFAULT TRUE,
       created_at TIMESTAMP DEFAULT NOW()
     )
   `;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT TRUE`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS semesters (

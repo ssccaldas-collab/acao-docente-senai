@@ -94,7 +94,7 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
   const byStage = [1, 2, 3, 4].map(stage => pending.filter(c => c.current_stage === stage));
 
   const navCards = [
-    { icon: <GraduationCap size={24} />, label: 'Docentes', desc: 'Histórico completo de avaliação por docente', color: '#C8102E', bg: '#FFEBEE', path: '/gestor/docentes' },
+    { icon: <GraduationCap size={24} />, label: 'Docentes', desc: 'Histórico completo de avaliação por docente', color: '#4338CA', bg: '#FFEBEE', path: '/gestor/docentes' },
     { icon: <Users size={24} />, label: 'Usuários', desc: 'Gerenciar docentes, OPPs e coordenadores', color: '#6A1B9A', bg: '#F3E5F5', path: '/gestor/usuarios' },
     { icon: <CalendarDays size={24} />, label: 'Semestres', desc: 'Cadastrar semestres e gerar ciclos de avaliação', color: '#00695C', bg: '#E0F2F1', path: '/gestor/semestres' },
   ];
@@ -106,7 +106,7 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '2rem 1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div>
-            <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#1A2344' }}>Painel do Gestor</h1>
+            <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#211C5C' }}>Painel do Gestor</h1>
             <p style={{ color: '#666', fontSize: '0.88rem', marginTop: '0.2rem' }}>
               {activeSemester ? `Semestre ${activeSemester.label}` : 'Nenhum semestre ativo'} · Ação Docente
             </p>
@@ -119,7 +119,7 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
 
         {/* ── HERO CARD ─────────────────────────────────────── */}
         <div style={{
-          background: 'linear-gradient(135deg, #1A2344 0%, #0D1628 100%)',
+          background: 'linear-gradient(135deg, #211C5C 0%, #130F35 100%)',
           borderRadius: '1.25rem',
           padding: '2rem 2.5rem',
           marginBottom: '1.5rem',
@@ -208,7 +208,7 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
                   {s.icon}
                 </div>
               </div>
-              <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#1A2344' }}>{loading ? '—' : s.value}</p>
+              <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#211C5C' }}>{loading ? '—' : s.value}</p>
             </div>
           ))}
         </div>
@@ -230,7 +230,7 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
                 {card.icon}
               </div>
               <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: 700, fontSize: '1rem', color: '#1A2344' }}>{card.label}</p>
+                <p style={{ fontWeight: 700, fontSize: '1rem', color: '#211C5C' }}>{card.label}</p>
                 <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.2rem' }}>{card.desc}</p>
               </div>
               <ChevronRight size={18} color={card.color} />
@@ -269,7 +269,7 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                              <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1A2344' }}>{c.teacher_name}</p>
+                              <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#211C5C' }}>{c.teacher_name}</p>
                               <span className={isOverdue ? 'badge-atrasado' : 'badge-no-prazo'}>{isOverdue ? 'ATRASADO' : 'NO PRAZO'}</span>
                             </div>
                             <p style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.15rem' }}>
@@ -302,7 +302,7 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
                         <CheckCircle2 size={18} color="#2E7D32" />
                       </div>
                       <div style={{ flex: 1 }}>
-                        <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1A2344' }}>{c.teacher_name}</p>
+                        <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#211C5C' }}>{c.teacher_name}</p>
                         <span className="badge-concluido">CONCLUÍDO</span>
                       </div>
                       <ChevronRight size={16} color="#bbb" />

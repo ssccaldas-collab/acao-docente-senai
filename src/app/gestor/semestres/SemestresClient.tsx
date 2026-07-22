@@ -83,8 +83,8 @@ export function SemestresClient({ userName, role }: { userName: string; role: Ro
               <ArrowLeft size={18} color="#555" />
             </button>
             <div>
-              <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1A2344', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <CalendarDays size={20} color="#C8102E" /> Semestres
+              <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#211C5C', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CalendarDays size={20} color="#4338CA" /> Semestres
               </h1>
               <p style={{ fontSize: '0.8rem', color: '#888' }}>{semesters.length} semestre(s) cadastrado(s)</p>
             </div>
@@ -96,7 +96,7 @@ export function SemestresClient({ userName, role }: { userName: string; role: Ro
 
         {showForm && (
           <div style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', padding: '1.25rem', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1A2344', marginBottom: '1rem' }}>Novo Semestre</h3>
+            <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#211C5C', marginBottom: '1rem' }}>Novo Semestre</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
               <div>
                 <label style={labelStyle}>Identificador * (ex: 2026-1)</label>
@@ -144,7 +144,7 @@ export function SemestresClient({ userName, role }: { userName: string; role: Ro
               <div key={s.id} style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', padding: '0.9rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <p style={{ fontWeight: 700, fontSize: '0.92rem', color: '#1A2344' }}>{s.label}</p>
+                    <p style={{ fontWeight: 700, fontSize: '0.92rem', color: '#211C5C' }}>{s.label}</p>
                     {s.is_active && <span className="badge-no-prazo">Ativo</span>}
                   </div>
                   <p style={{ fontSize: '0.78rem', color: '#888', marginTop: '0.15rem' }}>

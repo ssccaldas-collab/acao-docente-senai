@@ -82,7 +82,7 @@ export function CicloDocenteClient({ userName, cycle }: { userName: string; cycl
             <ArrowLeft size={18} color="#555" />
           </button>
           <div>
-            <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1A2344' }}>Semestre {cycle.semester_label}</h1>
+            <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#211C5C' }}>Semestre {cycle.semester_label}</h1>
             <p style={{ fontSize: '0.8rem', color: '#888' }}>{cycle.manager_name ? `Gestor responsável: ${cycle.manager_name}` : ''}</p>
           </div>
         </div>
@@ -93,7 +93,7 @@ export function CicloDocenteClient({ userName, cycle }: { userName: string; cycl
               const Icon = step.icon;
               const done = isConcluded || step.stage < cycle.current_stage;
               const activeStep = !isConcluded && step.stage === cycle.current_stage;
-              const color = done ? '#2E7D32' : activeStep ? '#C8102E' : '#bbb';
+              const color = done ? '#2E7D32' : activeStep ? '#4338CA' : '#bbb';
               return (
                 <div key={step.stage} style={{ flex: 1, textAlign: 'center', position: 'relative' }}>
                   {i > 0 && (
@@ -108,7 +108,7 @@ export function CicloDocenteClient({ userName, cycle }: { userName: string; cycl
                     }}>
                       {done ? <CheckCircle2 size={18} color={color} /> : activeStep ? <Icon size={16} color={color} /> : <Circle size={14} color={color} />}
                     </div>
-                    <p style={{ fontSize: '0.75rem', fontWeight: activeStep ? 700 : 600, color: activeStep ? '#1A2344' : '#888' }}>{step.label}</p>
+                    <p style={{ fontSize: '0.75rem', fontWeight: activeStep ? 700 : 600, color: activeStep ? '#211C5C' : '#888' }}>{step.label}</p>
                     <p style={{ fontSize: '0.68rem', color: '#aaa' }}>Prazo: {fmtDate(deadlines[step.stage - 1])}</p>
                   </div>
                 </div>
@@ -134,7 +134,7 @@ export function CicloDocenteClient({ userName, cycle }: { userName: string; cycl
 
         {stage3 && (
           <div style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', padding: '1.5rem', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1A2344', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#211C5C', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <MessageSquare size={17} color="#F57F17" /> Devolutiva — {fmtDate(stage3.session_date)}
             </h3>
             <p style={{ fontSize: '0.88rem', color: '#333', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{stage3.notes}</p>

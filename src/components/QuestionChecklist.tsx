@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function QuestionChecklist({ questions, answers, onChange, disabled }: Props) {
-  const labelStyle = { fontSize: '0.88rem', fontWeight: 600 as const, color: '#1A2344', display: 'block' as const, marginBottom: '0.5rem' };
+  const labelStyle = { fontSize: '0.88rem', fontWeight: 600 as const, color: '#211C5C', display: 'block' as const, marginBottom: '0.5rem' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>

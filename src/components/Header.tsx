@@ -25,10 +25,10 @@ export function Header({ userName, role }: HeaderProps) {
   }
 
   const initials = userName?.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase() ?? '';
-  const accentColor = role === 'docente' ? '#2E7D32' : '#C8102E';
+  const accentColor = role === 'docente' ? '#2E7D32' : '#4338CA';
 
   return (
-    <header style={{ background: 'linear-gradient(135deg, #1A2344 0%, #0D1628 100%)', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
+    <header style={{ background: 'linear-gradient(135deg, #211C5C 0%, #130F35 100%)', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <SenaiLogo size="md" />
@@ -83,7 +83,7 @@ export function Header({ userName, role }: HeaderProps) {
                 fontWeight: 500,
                 transition: 'background 0.2s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(200,16,46,0.4)')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(67,56,202,0.4)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
             >
               <LogOut size={14} />

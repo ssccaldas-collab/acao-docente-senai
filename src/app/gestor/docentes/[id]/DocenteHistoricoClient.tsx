@@ -62,7 +62,7 @@ export function DocenteHistoricoClient({ userName, role, teacher }: { userName: 
               <GraduationCap size={20} color="#2E7D32" />
             </div>
             <div>
-              <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1A2344' }}>{teacher.name}</h1>
+              <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#211C5C' }}>{teacher.name}</h1>
               <p style={{ fontSize: '0.8rem', color: '#888' }}>{teacher.email}{teacher.registration_number ? ` · ${teacher.registration_number}` : ''}</p>
             </div>
           </div>
@@ -87,7 +87,7 @@ export function DocenteHistoricoClient({ userName, role, teacher }: { userName: 
                     <Icon size={18} color="#888" />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1A2344' }}>Semestre {c.semester_label}</p>
+                    <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#211C5C' }}>Semestre {c.semester_label}</p>
                     <p style={{ fontSize: '0.75rem', color: '#888' }}>
                       Etapa {c.current_stage}/4 — {STAGE_LABELS[c.current_stage]}
                     </p>

@@ -77,7 +77,7 @@ function ChecklistSection({
           <Icon size={17} color={existing ? '#2E7D32' : '#888'} />
         </div>
         <div style={{ flex: 1 }}>
-          <p style={{ fontWeight: 700, fontSize: '0.92rem', color: '#1A2344' }}>{title}</p>
+          <p style={{ fontWeight: 700, fontSize: '0.92rem', color: '#211C5C' }}>{title}</p>
           <p style={{ fontSize: '0.75rem', color: '#888' }}>
             {existing ? `Respondido${respondedBy ? ` por ${respondedBy}` : ''}` : 'Ainda não respondido'}
           </p>
@@ -134,7 +134,7 @@ function DevolutivaSection({ existing, onSave, saving, open, onToggle }: {
           <MessageSquare size={17} color={existing ? '#2E7D32' : '#888'} />
         </div>
         <div style={{ flex: 1 }}>
-          <p style={{ fontWeight: 700, fontSize: '0.92rem', color: '#1A2344' }}>Etapa 3 — Devolutiva</p>
+          <p style={{ fontWeight: 700, fontSize: '0.92rem', color: '#211C5C' }}>Etapa 3 — Devolutiva</p>
           <p style={{ fontSize: '0.75rem', color: '#888' }}>
             {existing ? `Registrada${existing.applied_by_name ? ` por ${existing.applied_by_name}` : ''} · ${existing.teacher_acknowledged ? 'docente ciente' : 'aguardando ciência do docente'}` : 'Ainda não registrada'}
           </p>
@@ -194,7 +194,7 @@ function ReplicaSection({ existing, onSave, saving, open, onToggle }: {
           <RotateCcw size={17} color={existing ? '#2E7D32' : '#888'} />
         </div>
         <div style={{ flex: 1 }}>
-          <p style={{ fontWeight: 700, fontSize: '0.92rem', color: '#1A2344' }}>Etapa 4 — Réplica / Fechamento</p>
+          <p style={{ fontWeight: 700, fontSize: '0.92rem', color: '#211C5C' }}>Etapa 4 — Réplica / Fechamento</p>
           <p style={{ fontSize: '0.75rem', color: '#888' }}>
             {existing ? `Ciclo fechado${existing.closed_by_name ? ` por ${existing.closed_by_name}` : ''}` : 'Ciclo ainda não fechado'}
           </p>
@@ -284,7 +284,7 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
             <ArrowLeft size={18} color="#555" />
           </button>
           <div>
-            <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1A2344' }}>{cycle.teacher_name}</h1>
+            <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#211C5C' }}>{cycle.teacher_name}</h1>
             <p style={{ fontSize: '0.8rem', color: '#888' }}>
               Semestre {cycle.semester_label} {cycle.manager_name ? `· Gestor: ${cycle.manager_name}` : ''}
             </p>
@@ -298,7 +298,7 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
               const Icon = step.icon;
               const done = isConcluded || step.stage < cycle.current_stage;
               const activeStep = !isConcluded && step.stage === cycle.current_stage;
-              const color = done ? '#2E7D32' : activeStep ? '#C8102E' : '#bbb';
+              const color = done ? '#2E7D32' : activeStep ? '#4338CA' : '#bbb';
               return (
                 <div key={step.stage} style={{ flex: 1, textAlign: 'center', position: 'relative' }}>
                   {i > 0 && (
@@ -313,7 +313,7 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
                     }}>
                       {done ? <CheckCircle2 size={18} color={color} /> : activeStep ? <Icon size={16} color={color} /> : <Circle size={14} color={color} />}
                     </div>
-                    <p style={{ fontSize: '0.75rem', fontWeight: activeStep ? 700 : 600, color: activeStep ? '#1A2344' : '#888' }}>{step.label}</p>
+                    <p style={{ fontSize: '0.75rem', fontWeight: activeStep ? 700 : 600, color: activeStep ? '#211C5C' : '#888' }}>{step.label}</p>
                     <p style={{ fontSize: '0.68rem', color: '#aaa' }}>Prazo: {fmtDate(deadlines[step.stage - 1])}</p>
                   </div>
                 </div>
