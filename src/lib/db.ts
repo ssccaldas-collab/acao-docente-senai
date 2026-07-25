@@ -29,7 +29,7 @@ export async function initDB() {
   await sql`
     CREATE TABLE IF NOT EXISTS semesters (
       id SERIAL PRIMARY KEY,
-      label VARCHAR(20) NOT NULL UNIQUE,
+      label VARCHAR(60) NOT NULL UNIQUE,
       start_date DATE NOT NULL,
       end_date DATE NOT NULL,
       default_stage1_deadline DATE,
@@ -38,6 +38,7 @@ export async function initDB() {
       created_at TIMESTAMP DEFAULT NOW()
     )
   `;
+  await sql`ALTER TABLE semesters ALTER COLUMN label TYPE VARCHAR(60)`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS evaluation_cycles (

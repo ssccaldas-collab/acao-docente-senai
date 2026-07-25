@@ -97,7 +97,7 @@ export function SemestresClient({ userName, role }: { userName: string; role: Ro
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
               <div>
                 <label style={labelStyle}>Identificador * (ex: 2026-1)</label>
-                <input value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} placeholder="2026-1" style={inputStyle} />
+                <input value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} placeholder="2026-1" maxLength={60} style={inputStyle} />
               </div>
               <div />
               <div>
