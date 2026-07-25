@@ -59,7 +59,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   if (!wasAlreadyRegistered) {
-    sendFeedbackRegisteredEmail(cycles[0].teacher_email as string, cycles[0].teacher_name as string).catch(() => {});
+    await sendFeedbackRegisteredEmail(cycles[0].teacher_email as string, cycles[0].teacher_name as string).catch(() => {});
   }
 
   return NextResponse.json({ ok: true });

@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
   const deadlineText = semester.default_stage1_deadline
     ? new Date(semester.default_stage1_deadline).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
     : null;
-  sendCycleStartedEmail(teacher.email, teacher.name, deadlineText).catch(() => {});
+  await sendCycleStartedEmail(teacher.email, teacher.name, deadlineText).catch(() => {});
 
   return NextResponse.json({ ok: true, id: result[0].id });
 }

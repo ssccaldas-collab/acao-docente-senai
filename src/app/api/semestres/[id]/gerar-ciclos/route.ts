@@ -21,6 +21,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     : null;
 
   let created = 0;
+  const emailSends: Promise<void>[] = [];
   for (const t of teachers as { id: number; name: string; email: string }[]) {
     const existing = await sql`
       SELECT id FROM evaluation_cycles
@@ -33,8 +34,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       VALUES (${t.id}, ${semester.id}, ${session.id}, ${semester.default_stage1_deadline}, ${semester.default_stage2_deadline}, 'nao_iniciado')
     `;
     created++;
-    sendCycleStartedEmail(t.email, t.name, deadlineText).catch(() => {});
+    emailSends.push(sendCycleStartedEmail(t.email, t.name, deadlineText).catch(() => {}));
   }
+
+  // Espera todos os e-mails saírem antes de responder — a função serverless pode ser
+  // encerrada assim que a resposta é enviada, matando qualquer envio ainda em andamento.
+  await Promise.allSettled(emailSends);
 
   return NextResponse.json({ ok: true, created, totalDocentes: teachers.length });
 }

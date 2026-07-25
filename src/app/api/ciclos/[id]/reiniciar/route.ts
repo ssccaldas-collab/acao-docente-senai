@@ -30,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const deadlineText = cycle.stage1_deadline
     ? new Date(cycle.stage1_deadline).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
     : null;
-  sendCycleStartedEmail(cycle.teacher_email as string, cycle.teacher_name as string, deadlineText).catch(() => {});
+  await sendCycleStartedEmail(cycle.teacher_email as string, cycle.teacher_name as string, deadlineText).catch(() => {});
 
   return NextResponse.json({ ok: true, id: result[0].id });
 }

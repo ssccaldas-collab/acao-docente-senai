@@ -76,7 +76,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   `;
 
   if (cycle.manager_email) {
-    sendDocumentUploadedEmail(cycle.manager_email as string, cycle.teacher_name as string, file.name).catch(() => {});
+    await sendDocumentUploadedEmail(cycle.manager_email as string, cycle.teacher_name as string, file.name).catch(() => {});
   }
 
   return NextResponse.json(result[0]);
