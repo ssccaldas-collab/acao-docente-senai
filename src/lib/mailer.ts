@@ -7,7 +7,7 @@ const STAGE_LABELS: Record<number, string> = {
   4: 'Réplica',
 };
 
-const APP_URL = process.env.APP_URL || 'http://localhost:3000';
+const APP_URL = (process.env.APP_URL || 'http://localhost:3000').trim().replace(/\/+$/, '');
 
 const ACCENTS = {
   indigo: { bg: '#EDEBFC', color: '#4338CA', button: '#4338CA' },

@@ -343,7 +343,7 @@ function ReplicaSection({ existing, onSave, saving, open, onToggle }: {
                     <p style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.3rem' }}>Assinatura do docente</p>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={existing.docente_signature} alt="Assinatura do docente" style={{ maxWidth: 260, border: '1px solid #E0E0E0', borderRadius: '0.5rem' }} />
-                    {existing.docente_signed_at && <p style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.2rem' }}>Assinado em {new Date(existing.docente_signed_at).toLocaleString('pt-BR')}</p>}
+                    {existing.docente_signed_at && <p style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.2rem' }}>Assinado em {new Date(existing.docente_signed_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>}
                   </div>
                 )}
               </div>
@@ -596,7 +596,7 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
               <p style={{ fontWeight: 700, fontSize: '0.88rem', color: '#211C5C' }}>Comprovante de Ação Docente (PDF)</p>
               <p style={{ fontSize: '0.78rem', color: '#888', marginTop: '0.1rem' }}>
                 {cycle.comprovante_blob_pathname
-                  ? `Gerado em ${cycle.comprovante_generated_at ? new Date(cycle.comprovante_generated_at).toLocaleString('pt-BR') : ''} · reúne as respostas de todas as etapas e as duas assinaturas`
+                  ? `Gerado em ${cycle.comprovante_generated_at ? new Date(cycle.comprovante_generated_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : ''} · reúne as respostas de todas as etapas e as duas assinaturas`
                   : stage4?.docente_signature
                     ? 'As duas assinaturas já foram coletadas — gere o comprovante abaixo'
                     : 'Disponível assim que o docente assinar o encerramento'}

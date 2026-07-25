@@ -104,7 +104,7 @@ export function DocenteHistoricoClient({ userName, role, teacher }: { userName: 
                   <div style={{ flex: 1 }}>
                     <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#211C5C' }}>Semestre {c.semester_label}</p>
                     <p style={{ fontSize: '0.75rem', color: '#888' }}>
-                      Etapa {c.current_stage}/4 — {STAGE_LABELS[c.current_stage]} · {new Date(c.created_at).toLocaleDateString('pt-BR')}
+                      Etapa {c.current_stage}/4 — {STAGE_LABELS[c.current_stage]} · {new Date(c.created_at).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
                     </p>
                   </div>
                   <span className={STATUS_BADGE[c.status]}>{STATUS_LABEL[c.status]}</span>

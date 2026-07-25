@@ -167,7 +167,7 @@ export function CicloDocenteClient({ userName, cycle }: { userName: string; cycl
                 <p style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.3rem' }}>Sua assinatura</p>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={stage4.docente_signature} alt="Sua assinatura" style={{ maxWidth: 300, border: '1px solid #E0E0E0', borderRadius: '0.5rem' }} />
-                {stage4.docente_signed_at && <p style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.2rem' }}>Assinado em {new Date(stage4.docente_signed_at).toLocaleString('pt-BR')}</p>}
+                {stage4.docente_signed_at && <p style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.2rem' }}>Assinado em {new Date(stage4.docente_signed_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>}
               </div>
             ) : (
               <div>

@@ -69,7 +69,7 @@ export function SemestresClient({ userName, role }: { userName: string; role: Ro
   const inputStyle = { width: '100%', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.6rem 0.75rem', fontSize: '0.88rem', outline: 'none' };
   const labelStyle = { fontSize: '0.8rem', fontWeight: 600 as const, color: '#555', display: 'block' as const, marginBottom: '0.3rem' };
 
-  const fmt = (d: string | null) => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
+  const fmt = (d: string | null) => d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—';
 
   return (
     <AppShell userName={userName} role={role} maxWidth={900}>

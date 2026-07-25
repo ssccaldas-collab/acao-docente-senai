@@ -147,7 +147,7 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: '#999' }}>
               <RefreshCw size={12} />
-              {lastUpdate?.toLocaleTimeString('pt-BR')}
+              {lastUpdate?.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
             </div>
             <button
               onClick={() => { setShowStartModal(true); setStartError(''); setSearch(''); }}
