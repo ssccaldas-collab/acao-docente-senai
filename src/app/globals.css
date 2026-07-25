@@ -205,8 +205,17 @@ body {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
+  .pipeline-flow {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .pipeline-flow > div {
+    padding: 0.4rem 0;
+  }
+
+  .pipeline-connector {
+    display: none !important;
   }
 
   .table-header {

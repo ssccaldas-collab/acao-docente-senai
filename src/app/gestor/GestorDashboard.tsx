@@ -296,25 +296,50 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
           )}
         </div>
 
-        {/* ── KPI CARDS ─────────────────────────────────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', marginBottom: '2rem' }} className="stats-grid">
+        {/* ── FLUXO DO PIPELINE ─────────────────────────────── */}
+        <div style={{
+          background: 'white', borderRadius: '1rem', border: '1px solid #E0E0E0',
+          padding: '1.35rem 1.5rem', marginBottom: '1rem',
+          display: 'flex', alignItems: 'stretch', flexWrap: 'wrap',
+        }} className="pipeline-flow">
           {[
-            { icon: <FileText size={20} />, label: 'Documentação', value: byStage[0].length, color: '#1565C0', bg: '#E3F2FD' },
-            { icon: <Eye size={20} />, label: 'Observação', value: byStage[1].length, color: '#6A1B9A', bg: '#F3E5F5' },
-            { icon: <MessageSquare size={20} />, label: 'Devolutiva', value: byStage[2].length, color: '#F57F17', bg: '#FFF8E1' },
-            { icon: <RotateCcw size={20} />, label: 'Réplica', value: byStage[3].length, color: '#00695C', bg: '#E0F2F1' },
-            { icon: <AlertTriangle size={20} />, label: 'Atrasados', value: overdue.length, color: '#C8102E', bg: '#FFEBEE' },
-          ].map(s => (
-            <div key={s.label} style={{ background: 'white', borderRadius: '0.75rem', padding: '1.1rem', border: '1px solid #E0E0E0', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
-                <p style={{ fontSize: '0.7rem', fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</p>
-                <div style={{ width: 32, height: 32, borderRadius: '0.5rem', background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color }}>
+            { icon: <FileText size={19} />, label: 'Documentação', value: byStage[0].length, color: '#1565C0', bg: '#E3F2FD' },
+            { icon: <Eye size={19} />, label: 'Observação', value: byStage[1].length, color: '#6A1B9A', bg: '#F3E5F5' },
+            { icon: <MessageSquare size={19} />, label: 'Devolutiva', value: byStage[2].length, color: '#F57F17', bg: '#FFF8E1' },
+            { icon: <RotateCcw size={19} />, label: 'Réplica', value: byStage[3].length, color: '#00695C', bg: '#E0F2F1' },
+          ].map((s, i, arr) => (
+            <div key={s.label} style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 140 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1 }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: '50%', background: s.bg, color: s.color, flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
                   {s.icon}
                 </div>
+                <div>
+                  <p style={{ fontSize: '1.4rem', fontWeight: 800, color: '#211C5C', lineHeight: 1 }}>{loading ? '—' : s.value}</p>
+                  <p style={{ fontSize: '0.7rem', fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: '0.25rem' }}>{s.label}</p>
+                </div>
               </div>
-              <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#211C5C' }}>{loading ? '—' : s.value}</p>
+              {i < arr.length - 1 && (
+                <span className="pipeline-connector" style={{ display: 'flex', flexShrink: 0, margin: '0 0.5rem' }}>
+                  <ChevronRight size={16} color="#D8D9EC" />
+                </span>
+              )}
             </div>
           ))}
+        </div>
+
+        <div style={{
+          background: overdue.length > 0 ? '#FFEBEE' : '#E8F5E9',
+          border: `1px solid ${overdue.length > 0 ? '#FFCDD2' : '#C8E6C9'}`,
+          borderRadius: '0.75rem', padding: '0.85rem 1.25rem', marginBottom: '2rem',
+          display: 'flex', alignItems: 'center', gap: '0.6rem',
+        }}>
+          {overdue.length > 0 ? <AlertTriangle size={18} color="#C8102E" /> : <CheckCircle2 size={18} color="#2E7D32" />}
+          <p style={{ fontSize: '0.85rem', fontWeight: 700, color: overdue.length > 0 ? '#C8102E' : '#2E7D32' }}>
+            {loading ? '—' : overdue.length > 0 ? `${overdue.length} ciclo${overdue.length > 1 ? 's' : ''} atrasado${overdue.length > 1 ? 's' : ''}` : 'Nenhum ciclo atrasado'}
+          </p>
         </div>
 
         {/* ── PIPELINE POR ETAPA ────────────────────────────── */}
