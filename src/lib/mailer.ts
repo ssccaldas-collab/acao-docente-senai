@@ -32,7 +32,8 @@ async function sendMail(to: string, subject: string, html: string) {
     return;
   }
   try {
-    await transport.sendMail({ from: `Ação Docente SENAI <${process.env.SMTP_USER || 'no-reply@senai.br'}>`, to, subject, html });
+    const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@senai.br';
+    await transport.sendMail({ from: `Ação Docente SENAI <${fromAddress}>`, to, subject, html });
   } catch (err) {
     console.error('[mailer] Falha ao enviar e-mail:', err);
   }
