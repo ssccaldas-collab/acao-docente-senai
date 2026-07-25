@@ -13,6 +13,7 @@ export default async function CicloGestorPage({ params }: { params: Promise<{ id
     SELECT
       ec.id, ec.current_stage, ec.status,
       ec.stage1_deadline, ec.stage2_deadline, ec.stage3_deadline, ec.stage4_deadline,
+      ec.comprovante_blob_pathname, ec.comprovante_generated_at,
       t.name as teacher_name, m.name as manager_name, s.label as semester_label
     FROM evaluation_cycles ec
     JOIN users t ON t.id = ec.teacher_id

@@ -2,12 +2,20 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/Header';
+import { AppShell } from '@/components/AppShell';
 import {
-  Users, CalendarDays, FileText, Eye, MessageSquare, RotateCcw, GraduationCap,
-  ChevronRight, RefreshCw, CheckCircle2, Clock, AlertTriangle,
+  FileText, Eye, MessageSquare, RotateCcw, GraduationCap,
+  ChevronRight, RefreshCw, CheckCircle2, Clock, AlertTriangle, Play, X, Search,
 } from 'lucide-react';
 import type { Role } from '@/lib/auth';
+
+interface Teacher {
+  id: number;
+  name: string;
+  registration_number: string | null;
+  role: string;
+  active: boolean;
+}
 
 interface Cycle {
   id: number;
@@ -22,6 +30,7 @@ interface Cycle {
   manager_name: string | null;
   semester_id: number;
   semester_label: string;
+  document_count: number;
 }
 
 interface Semester {
@@ -53,16 +62,26 @@ function fmtDate(d: string | null) {
 export function GestorDashboard({ userName, role }: { userName: string; role: Role }) {
   const router = useRouter();
   const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [activeSemester, setActiveSemester] = useState<Semester | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [showStartModal, setShowStartModal] = useState(false);
+  const [search, setSearch] = useState('');
+  const [starting, setStarting] = useState<number | null>(null);
+  const [startError, setStartError] = useState('');
+
   async function fetchData() {
     try {
-      const semesters: Semester[] = await fetch('/api/semestres').then(r => r.json());
+      const [semesters, teachersData]: [Semester[], Teacher[]] = await Promise.all([
+        fetch('/api/semestres').then(r => r.json()),
+        fetch('/api/usuarios').then(r => r.json()),
+      ]);
       const active = semesters.find(s => s.is_active) ?? semesters[0] ?? null;
       setActiveSemester(active);
+      setTeachers(teachersData.filter(t => t.role === 'docente' && t.active));
 
       if (active) {
         const cyclesData: Cycle[] = await fetch(`/api/ciclos?semestre_id=${active.id}`).then(r => r.json());
@@ -75,6 +94,23 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
     } catch {
       setLoading(false);
     }
+  }
+
+  async function iniciarAcaoDocente(teacherId: number) {
+    if (!activeSemester) return;
+    setStarting(teacherId); setStartError('');
+    const res = await fetch('/api/ciclos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ teacher_id: teacherId, semester_id: activeSemester.id }),
+    });
+    const data = await res.json();
+    setStarting(null);
+    if (!res.ok) { setStartError(data.error); return; }
+    setShowStartModal(false);
+    setSearch('');
+    await fetchData();
+    router.push(`/gestor/ciclos/${data.id}`);
   }
 
   useEffect(() => {
@@ -93,17 +129,14 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
   const pending = active.filter(c => c.status !== 'concluido');
   const byStage = [1, 2, 3, 4].map(stage => pending.filter(c => c.current_stage === stage));
 
-  const navCards = [
-    { icon: <GraduationCap size={24} />, label: 'Docentes', desc: 'Histórico completo de avaliação por docente', color: '#4338CA', bg: '#FFEBEE', path: '/gestor/docentes' },
-    { icon: <Users size={24} />, label: 'Usuários', desc: 'Gerenciar docentes, OPPs e coordenadores', color: '#6A1B9A', bg: '#F3E5F5', path: '/gestor/usuarios' },
-    { icon: <CalendarDays size={24} />, label: 'Semestres', desc: 'Cadastrar semestres e gerar ciclos de avaliação', color: '#00695C', bg: '#E0F2F1', path: '/gestor/semestres' },
-  ];
+  const teachersWithoutCycle = teachers.filter(t => !cycles.some(c => c.teacher_id === t.id && c.status !== 'cancelado'));
+  const filteredTeachers = teachersWithoutCycle.filter(t =>
+    t.name.toLowerCase().includes(search.toLowerCase()) ||
+    (t.registration_number || '').toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F0F2F5' }}>
-      <Header userName={userName} role={role} />
-
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '2rem 1.5rem' }}>
+    <AppShell userName={userName} role={role} background="#F0F2F5">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div>
             <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#211C5C' }}>Painel do Gestor</h1>
@@ -111,11 +144,82 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
               {activeSemester ? `Semestre ${activeSemester.label}` : 'Nenhum semestre ativo'} · Ação Docente
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: '#999' }}>
-            <RefreshCw size={12} />
-            {lastUpdate?.toLocaleTimeString('pt-BR')}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: '#999' }}>
+              <RefreshCw size={12} />
+              {lastUpdate?.toLocaleTimeString('pt-BR')}
+            </div>
+            <button
+              onClick={() => { setShowStartModal(true); setStartError(''); setSearch(''); }}
+              disabled={!activeSemester}
+              className="btn-primary"
+              style={{ opacity: activeSemester ? 1 : 0.5, cursor: activeSemester ? 'pointer' : 'not-allowed' }}
+              title={activeSemester ? undefined : 'Cadastre um semestre ativo primeiro'}
+            >
+              <Play size={16} /> Iniciar Ação Docente
+            </button>
           </div>
         </div>
+
+        {showStartModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+            onClick={() => setShowStartModal(false)}>
+            <div style={{ background: 'white', borderRadius: '1rem', padding: '1.5rem', width: '100%', maxWidth: 480, maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <div>
+                  <h3 style={{ fontWeight: 700, fontSize: '1rem', color: '#211C5C' }}>Iniciar Ação Docente</h3>
+                  <p style={{ fontSize: '0.78rem', color: '#888', marginTop: '0.15rem' }}>
+                    Selecione o docente para iniciar o ciclo no semestre {activeSemester?.label}
+                  </p>
+                </div>
+                <button onClick={() => setShowStartModal(false)} style={{ background: '#F5F5F5', border: 'none', borderRadius: '0.4rem', padding: '0.4rem', cursor: 'pointer', display: 'flex' }}>
+                  <X size={16} color="#555" />
+                </button>
+              </div>
+
+              <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                <Search size={15} color="#999" style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)' }} />
+                <input type="text" placeholder="Buscar docente por nome ou NIF..." value={search} onChange={e => setSearch(e.target.value)} autoFocus
+                  style={{ width: '100%', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.6rem 0.75rem 0.6rem 2.2rem', fontSize: '0.85rem', outline: 'none' }} />
+              </div>
+
+              {startError && <p style={{ color: '#C62828', fontSize: '0.82rem', marginBottom: '0.75rem' }}>{startError}</p>}
+
+              <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                {filteredTeachers.length === 0 ? (
+                  <p style={{ textAlign: 'center', color: '#999', fontSize: '0.85rem', padding: '1.5rem 0' }}>
+                    {teachersWithoutCycle.length === 0
+                      ? 'Todos os docentes ativos já têm um ciclo neste semestre.'
+                      : 'Nenhum docente encontrado.'}
+                  </p>
+                ) : filteredTeachers.map(t => (
+                  <button key={t.id} onClick={() => iniciarAcaoDocente(t.id)} disabled={starting !== null}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.65rem 0.85rem',
+                      border: '1px solid #E0E0E0', borderRadius: '0.5rem', background: 'white', cursor: starting !== null ? 'not-allowed' : 'pointer',
+                      textAlign: 'left', width: '100%',
+                    }}
+                    onMouseEnter={e => { if (starting === null) e.currentTarget.style.borderColor = '#4338CA'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#E0E0E0'; }}>
+                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#E8F5E9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <GraduationCap size={16} color="#2E7D32" />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: 600, fontSize: '0.85rem', color: '#211C5C' }}>{t.name}</p>
+                      {t.registration_number && <p style={{ fontSize: '0.72rem', color: '#999' }}>NIF {t.registration_number}</p>}
+                    </div>
+                    {starting === t.id ? (
+                      <span style={{ fontSize: '0.75rem', color: '#4338CA', fontWeight: 600 }}>Iniciando...</span>
+                    ) : (
+                      <Play size={15} color="#4338CA" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── HERO CARD ─────────────────────────────────────── */}
         <div style={{
@@ -213,31 +317,6 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
           ))}
         </div>
 
-        {/* ── NAV CARDS ─────────────────────────────────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
-          {navCards.map(card => (
-            <button key={card.path} onClick={() => router.push(card.path)}
-              style={{
-                background: 'white', border: '1px solid #E0E0E0', borderRadius: '0.75rem',
-                padding: '1.25rem 1.5rem', cursor: 'pointer', textAlign: 'left',
-                display: 'flex', alignItems: 'center', gap: '1rem',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.06)', transition: 'all 0.15s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = card.color; e.currentTarget.style.boxShadow = `0 4px 12px ${card.color}20`; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#E0E0E0'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'; }}
-            >
-              <div style={{ width: 52, height: 52, borderRadius: '0.75rem', background: card.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: card.color, flexShrink: 0 }}>
-                {card.icon}
-              </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: 700, fontSize: '1rem', color: '#211C5C' }}>{card.label}</p>
-                <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.2rem' }}>{card.desc}</p>
-              </div>
-              <ChevronRight size={18} color={card.color} />
-            </button>
-          ))}
-        </div>
-
         {/* ── PIPELINE POR ETAPA ────────────────────────────── */}
         {!loading && total > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -271,6 +350,9 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                               <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#211C5C' }}>{c.teacher_name}</p>
                               <span className={isOverdue ? 'badge-atrasado' : 'badge-no-prazo'}>{isOverdue ? 'ATRASADO' : 'NO PRAZO'}</span>
+                              {stage === 1 && c.document_count > 0 && (
+                                <span className="badge-concluido">DOCUMENTAÇÃO RECEBIDA ({c.document_count})</span>
+                              )}
                             </div>
                             <p style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.15rem' }}>
                               Prazo: {fmtDate(deadlineFor(c))} {c.manager_name ? `· Gestor: ${c.manager_name}` : ''}
@@ -313,7 +395,6 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
             )}
           </div>
         )}
-      </div>
-    </div>
+    </AppShell>
   );
 }

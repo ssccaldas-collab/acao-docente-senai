@@ -17,9 +17,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   const rows = await sql`
-    SELECT r.*, u.name as reviewed_by_name
+    SELECT r.*, COALESCE(u.name, 'Usuário removido') as reviewed_by_name
     FROM stage1_documentation_reviews r
-    JOIN users u ON u.id = r.reviewed_by
+    LEFT JOIN users u ON u.id = r.reviewed_by
     WHERE cycle_id = ${Number(id)}
   `;
   return NextResponse.json(rows[0] ?? null);
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (errors.length > 0) return NextResponse.json({ error: errors.join('; ') }, { status: 400 });
 
   const sql = getDB();
-  const cycles = await sql`SELECT current_stage FROM evaluation_cycles WHERE id = ${Number(id)}`;
+  const cycles = await sql`SELECT id FROM evaluation_cycles WHERE id = ${Number(id)}`;
   if (cycles.length === 0) return NextResponse.json({ error: 'Ciclo não encontrado' }, { status: 404 });
 
   await sql`
@@ -45,11 +45,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     ON CONFLICT (cycle_id) DO UPDATE SET
       reviewed_by = ${session.id}, answers = ${JSON.stringify(answers)}, overall_comment = ${overall_comment || null}, reviewed_at = NOW()
   `;
-
-  const currentStage = cycles[0].current_stage as number;
-  if (currentStage <= 1) {
-    await sql`UPDATE evaluation_cycles SET current_stage = 2, status = 'em_andamento', updated_at = NOW() WHERE id = ${Number(id)}`;
-  }
 
   return NextResponse.json({ ok: true });
 }

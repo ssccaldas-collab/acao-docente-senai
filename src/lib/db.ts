@@ -52,11 +52,17 @@ export async function initDB() {
       stage2_deadline DATE,
       stage3_deadline DATE,
       stage4_deadline DATE,
+      comprovante_blob_pathname TEXT,
+      comprovante_generated_at TIMESTAMP,
       created_at TIMESTAMP DEFAULT NOW(),
-      updated_at TIMESTAMP DEFAULT NOW(),
-      UNIQUE (teacher_id, semester_id)
+      updated_at TIMESTAMP DEFAULT NOW()
     )
   `;
+  await sql`ALTER TABLE evaluation_cycles ADD COLUMN IF NOT EXISTS comprovante_blob_pathname TEXT`;
+  await sql`ALTER TABLE evaluation_cycles ADD COLUMN IF NOT EXISTS comprovante_generated_at TIMESTAMP`;
+  // Um docente pode ter mais de um ciclo por semestre ao longo do tempo (histórico de reinícios);
+  // a unicidade de "ciclo ativo" é garantida pela aplicação, não pelo banco.
+  await sql`ALTER TABLE evaluation_cycles DROP CONSTRAINT IF EXISTS evaluation_cycles_teacher_id_semester_id_key`;
   await sql`CREATE INDEX IF NOT EXISTS idx_cycles_teacher ON evaluation_cycles(teacher_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_cycles_semester ON evaluation_cycles(semester_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_cycles_status ON evaluation_cycles(status)`;
@@ -81,30 +87,32 @@ export async function initDB() {
     CREATE TABLE IF NOT EXISTS stage1_documentation_reviews (
       id SERIAL PRIMARY KEY,
       cycle_id INTEGER NOT NULL UNIQUE REFERENCES evaluation_cycles(id) ON DELETE CASCADE,
-      reviewed_by INTEGER NOT NULL REFERENCES users(id) ON DELETE SET NULL,
+      reviewed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
       answers JSONB NOT NULL,
       overall_comment TEXT,
       reviewed_at TIMESTAMP DEFAULT NOW()
     )
   `;
+  await sql`ALTER TABLE stage1_documentation_reviews ALTER COLUMN reviewed_by DROP NOT NULL`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS stage2_classroom_observations (
       id SERIAL PRIMARY KEY,
       cycle_id INTEGER NOT NULL UNIQUE REFERENCES evaluation_cycles(id) ON DELETE CASCADE,
-      observed_by INTEGER NOT NULL REFERENCES users(id) ON DELETE SET NULL,
+      observed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
       observation_date DATE,
       answers JSONB NOT NULL,
       overall_comment TEXT,
       observed_at TIMESTAMP DEFAULT NOW()
     )
   `;
+  await sql`ALTER TABLE stage2_classroom_observations ALTER COLUMN observed_by DROP NOT NULL`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS stage3_feedback_sessions (
       id SERIAL PRIMARY KEY,
       cycle_id INTEGER NOT NULL UNIQUE REFERENCES evaluation_cycles(id) ON DELETE CASCADE,
-      applied_by INTEGER NOT NULL REFERENCES users(id) ON DELETE SET NULL,
+      applied_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
       session_date DATE NOT NULL,
       notes TEXT NOT NULL,
       teacher_acknowledged BOOLEAN DEFAULT FALSE,
@@ -112,17 +120,25 @@ export async function initDB() {
       created_at TIMESTAMP DEFAULT NOW()
     )
   `;
+  await sql`ALTER TABLE stage3_feedback_sessions ALTER COLUMN applied_by DROP NOT NULL`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS stage4_replicas (
       id SERIAL PRIMARY KEY,
       cycle_id INTEGER NOT NULL UNIQUE REFERENCES evaluation_cycles(id) ON DELETE CASCADE,
-      closed_by INTEGER NOT NULL REFERENCES users(id) ON DELETE SET NULL,
+      closed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
       final_result VARCHAR(30) CHECK (final_result IN ('adequado','parcialmente_adequado','inadequado')),
       notes TEXT,
+      manager_signature TEXT,
+      docente_signature TEXT,
+      docente_signed_at TIMESTAMP,
       closed_at TIMESTAMP DEFAULT NOW()
     )
   `;
+  await sql`ALTER TABLE stage4_replicas ALTER COLUMN closed_by DROP NOT NULL`;
+  await sql`ALTER TABLE stage4_replicas ADD COLUMN IF NOT EXISTS manager_signature TEXT`;
+  await sql`ALTER TABLE stage4_replicas ADD COLUMN IF NOT EXISTS docente_signature TEXT`;
+  await sql`ALTER TABLE stage4_replicas ADD COLUMN IF NOT EXISTS docente_signed_at TIMESTAMP`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS notification_log (

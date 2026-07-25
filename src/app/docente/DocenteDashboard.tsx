@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/Header';
+import { AppShell } from '@/components/AppShell';
 import { ChevronRight, FileText, Eye, MessageSquare, RotateCcw, CheckCircle2 } from 'lucide-react';
 
 interface Cycle {
@@ -43,9 +43,7 @@ export function DocenteDashboard({ userName }: { userName: string }) {
   const history = sorted.filter(c => c.id !== current?.id);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
-      <Header userName={userName} role="docente" />
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1.5rem' }}>
+    <AppShell userName={userName} role="docente" maxWidth={900}>
         <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#211C5C' }}>Minha Ação Docente</h1>
         <p style={{ color: '#666', fontSize: '0.88rem', marginTop: '0.2rem', marginBottom: '1.5rem' }}>
           Acompanhe o andamento da sua avaliação semestral
@@ -118,7 +116,6 @@ export function DocenteDashboard({ userName }: { userName: string }) {
             )}
           </>
         )}
-      </div>
-    </div>
+    </AppShell>
   );
 }

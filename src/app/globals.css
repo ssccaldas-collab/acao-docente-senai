@@ -149,17 +149,48 @@ body {
   transition: width 0.3s ease;
 }
 
+/* ── Sidebar layout ───────────────────────────────── */
+.sidebar {
+  width: 224px;
+}
+
+.app-content {
+  margin-left: 224px;
+  min-height: 100vh;
+}
+
+.sidebar-logo-mini {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .sidebar {
+    width: 64px;
+  }
+
+  .app-content {
+    margin-left: 64px;
+  }
+
+  .sidebar-label,
+  .sidebar-logo-full {
+    display: none !important;
+  }
+
+  .sidebar-logo-mini {
+    display: flex !important;
+  }
+
+  .sidebar-brand {
+    justify-content: center !important;
+    padding: 1.4rem 0.5rem !important;
+  }
+}
+
 /* ── Responsivo mobile ────────────────────────────── */
 @media (max-width: 640px) {
   .page-container {
     padding: 1rem !important;
-  }
-
-  header > div {
-    height: auto !important;
-    padding: 0.75rem 1rem !important;
-    flex-wrap: wrap;
-    gap: 0.5rem;
   }
 
   div[style*="repeat(4, 1fr)"] {

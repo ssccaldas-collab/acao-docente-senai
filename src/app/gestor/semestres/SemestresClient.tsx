@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/Header';
+import { AppShell } from '@/components/AppShell';
 import { ArrowLeft, CalendarDays, Plus, Trash2, Users2 } from 'lucide-react';
 import type { Role } from '@/lib/auth';
 
@@ -72,10 +72,7 @@ export function SemestresClient({ userName, role }: { userName: string; role: Ro
   const fmt = (d: string | null) => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
-      <Header userName={userName} role={role} />
-
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1.5rem' }}>
+    <AppShell userName={userName} role={role} maxWidth={900}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <button onClick={() => router.push('/gestor')}
@@ -168,7 +165,6 @@ export function SemestresClient({ userName, role }: { userName: string; role: Ro
             ))}
           </div>
         )}
-      </div>
-    </div>
+    </AppShell>
   );
 }

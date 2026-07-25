@@ -1,9 +1,10 @@
 'use client';
 
+// Proporção real do arquivo original: 1920x492 (~3.9:1)
 const sizes = {
-  sm: { width: 72, height: 28 },
-  md: { width: 100, height: 38 },
-  lg: { width: 130, height: 50 },
+  sm: { width: 94, height: 24 },
+  md: { width: 137, height: 35 },
+  lg: { width: 176, height: 45 },
 };
 
 export function SenaiLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
@@ -15,7 +16,7 @@ export function SenaiLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
       alt="SENAI"
       width={s.width}
       height={s.height}
-      style={{ objectFit: 'contain' }}
+      style={{ objectFit: 'contain', display: 'block' }}
     />
   );
 }

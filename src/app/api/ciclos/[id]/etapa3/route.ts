@@ -17,9 +17,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   const rows = await sql`
-    SELECT f.*, u.name as applied_by_name
+    SELECT f.*, COALESCE(u.name, 'Usuário removido') as applied_by_name
     FROM stage3_feedback_sessions f
-    JOIN users u ON u.id = f.applied_by
+    LEFT JOIN users u ON u.id = f.applied_by
     WHERE cycle_id = ${Number(id)}
   `;
   return NextResponse.json(rows[0] ?? null);

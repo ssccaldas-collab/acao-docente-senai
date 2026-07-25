@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/Header';
+import { AppShell } from '@/components/AppShell';
 import { QuestionChecklist } from '@/components/QuestionChecklist';
 import { DocumentsPanel } from '@/components/DocumentsPanel';
-import { ArrowLeft, FileText, Eye, MessageSquare, RotateCcw, CheckCircle2, Circle, ChevronDown, ChevronUp } from 'lucide-react';
+import { SignaturePad } from '@/components/SignaturePad';
+import { ArrowLeft, FileText, Eye, MessageSquare, RotateCcw, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Inbox, RefreshCcw, FileDown, Pencil } from 'lucide-react';
 import type { Role } from '@/lib/auth';
 import { STAGE1_DOCUMENTATION_QUESTIONS, STAGE2_CLASSROOM_OBSERVATION_QUESTIONS, type FormAnswers } from '@/lib/formQuestions';
 
@@ -20,6 +21,8 @@ export interface CycleDetail {
   teacher_name: string;
   manager_name: string | null;
   semester_label: string;
+  comprovante_blob_pathname: string | null;
+  comprovante_generated_at: string | Date | null;
 }
 
 const STEPS = [
@@ -60,6 +63,7 @@ function ChecklistSection({
   onToggle: () => void;
   showDate?: boolean;
 }) {
+  const [isEditing, setIsEditing] = useState(!existing);
   const [answers, setAnswers] = useState<FormAnswers>(existing?.answers ?? {});
   const [comment, setComment] = useState(existing?.overall_comment ?? '');
   const [date, setDate] = useState(toDateInputValue(existing?.observation_date ?? null));
@@ -68,7 +72,15 @@ function ChecklistSection({
     setAnswers(a => ({ ...a, [id]: { value } }));
   }
 
+  function startEditing() {
+    setAnswers(existing?.answers ?? {});
+    setComment(existing?.overall_comment ?? '');
+    setDate(toDateInputValue(existing?.observation_date ?? null));
+    setIsEditing(true);
+  }
+
   const respondedBy = existing?.reviewed_by_name ?? existing?.observed_by_name;
+  const locked = !!existing && !isEditing;
 
   return (
     <div style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', marginBottom: '1rem', overflow: 'hidden' }}>
@@ -88,22 +100,52 @@ function ChecklistSection({
 
       {open && (
         <div style={{ padding: '0 1.25rem 1.25rem' }}>
-          {showDate && (
-            <div style={{ marginBottom: '1.25rem' }}>
-              <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Data da aula observada</label>
-              <input type="date" value={date} onChange={e => setDate(e.target.value)}
-                style={{ border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.55rem 0.75rem', fontSize: '0.85rem', outline: 'none' }} />
+          {locked && existing ? (
+            <div>
+              {showDate && existing.observation_date && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', marginBottom: '0.3rem' }}>Data da aula observada</p>
+                  <p style={{ fontSize: '0.85rem', color: '#333' }}>{fmtDate(existing.observation_date)}</p>
+                </div>
+              )}
+              <QuestionChecklist questions={questions} answers={existing.answers} onChange={() => {}} disabled />
+              {existing.overall_comment && (
+                <div style={{ marginTop: '1rem' }}>
+                  <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', marginBottom: '0.3rem' }}>Comentário geral</p>
+                  <p style={{ fontSize: '0.85rem', color: '#333', whiteSpace: 'pre-wrap' }}>{existing.overall_comment}</p>
+                </div>
+              )}
+              <button type="button" onClick={startEditing} className="btn-secondary" style={{ marginTop: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Pencil size={14} /> Reabrir e editar
+              </button>
             </div>
+          ) : (
+            <>
+              {showDate && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Data da aula observada</label>
+                  <input type="date" value={date} onChange={e => setDate(e.target.value)}
+                    style={{ border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.55rem 0.75rem', fontSize: '0.85rem', outline: 'none' }} />
+                </div>
+              )}
+              <QuestionChecklist questions={questions} answers={answers} onChange={handleChange} disabled={saving} />
+              <div style={{ marginTop: '1rem' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Comentário geral (opcional)</label>
+                <textarea value={comment} onChange={e => setComment(e.target.value)} rows={2}
+                  style={{ width: '100%', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.6rem 0.75rem', fontSize: '0.85rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
+              </div>
+              <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                <button onClick={() => onSave(answers, comment, date)} disabled={saving} className="btn-primary">
+                  {saving ? 'Salvando...' : existing ? 'Salvar alterações' : 'Salvar e avançar'}
+                </button>
+                {existing && (
+                  <button type="button" onClick={() => setIsEditing(false)} className="btn-secondary">
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </>
           )}
-          <QuestionChecklist questions={questions} answers={answers} onChange={handleChange} disabled={saving} />
-          <div style={{ marginTop: '1rem' }}>
-            <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Comentário geral (opcional)</label>
-            <textarea value={comment} onChange={e => setComment(e.target.value)} rows={2}
-              style={{ width: '100%', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.6rem 0.75rem', fontSize: '0.85rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
-          </div>
-          <button onClick={() => onSave(answers, comment, date)} disabled={saving} className="btn-primary" style={{ marginTop: '1rem' }}>
-            {saving ? 'Salvando...' : existing ? 'Salvar alterações' : 'Salvar e avançar'}
-          </button>
         </div>
       )}
     </div>
@@ -124,8 +166,17 @@ function DevolutivaSection({ existing, onSave, saving, open, onToggle }: {
   open: boolean;
   onToggle: () => void;
 }) {
+  const [isEditing, setIsEditing] = useState(!existing);
   const [sessionDate, setSessionDate] = useState(toDateInputValue(existing?.session_date ?? null));
   const [notes, setNotes] = useState(existing?.notes ?? '');
+
+  function startEditing() {
+    setSessionDate(toDateInputValue(existing?.session_date ?? null));
+    setNotes(existing?.notes ?? '');
+    setIsEditing(true);
+  }
+
+  const locked = !!existing && !isEditing;
 
   return (
     <div style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', marginBottom: '1rem', overflow: 'hidden' }}>
@@ -145,20 +196,49 @@ function DevolutivaSection({ existing, onSave, saving, open, onToggle }: {
 
       {open && (
         <div style={{ padding: '0 1.25rem 1.25rem' }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Data da devolutiva *</label>
-            <input type="date" value={sessionDate} onChange={e => setSessionDate(e.target.value)}
-              style={{ border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.55rem 0.75rem', fontSize: '0.85rem', outline: 'none' }} />
-          </div>
-          <div>
-            <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Apontamentos passados ao docente *</label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={5}
-              placeholder="Descreva os pontos discutidos na devolutiva presencial..."
-              style={{ width: '100%', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.6rem 0.75rem', fontSize: '0.85rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
-          </div>
-          <button onClick={() => onSave(sessionDate, notes)} disabled={saving} className="btn-primary" style={{ marginTop: '1rem' }}>
-            {saving ? 'Salvando...' : existing ? 'Salvar alterações' : 'Registrar devolutiva e avançar'}
-          </button>
+          {locked && existing ? (
+            <div>
+              <div style={{ marginBottom: '1rem' }}>
+                <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', marginBottom: '0.3rem' }}>Data da devolutiva</p>
+                <p style={{ fontSize: '0.85rem', color: '#333' }}>{fmtDate(existing.session_date)}</p>
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', marginBottom: '0.3rem' }}>Apontamentos passados ao docente</p>
+                <p style={{ fontSize: '0.85rem', color: '#333', whiteSpace: 'pre-wrap' }}>{existing.notes}</p>
+              </div>
+              <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', fontWeight: 700, color: existing.teacher_acknowledged ? '#2E7D32' : '#F57F17' }}>
+                {existing.teacher_acknowledged ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                {existing.teacher_acknowledged ? 'Docente confirmou ciência' : 'Aguardando ciência do docente'}
+              </div>
+              <button type="button" onClick={startEditing} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Pencil size={14} /> Reabrir e editar
+              </button>
+            </div>
+          ) : (
+            <>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Data da devolutiva *</label>
+                <input type="date" value={sessionDate} onChange={e => setSessionDate(e.target.value)}
+                  style={{ border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.55rem 0.75rem', fontSize: '0.85rem', outline: 'none' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Apontamentos passados ao docente *</label>
+                <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={5}
+                  placeholder="Descreva os pontos discutidos na devolutiva presencial..."
+                  style={{ width: '100%', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.6rem 0.75rem', fontSize: '0.85rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
+              </div>
+              <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                <button onClick={() => onSave(sessionDate, notes)} disabled={saving} className="btn-primary">
+                  {saving ? 'Salvando...' : existing ? 'Salvar alterações' : 'Registrar devolutiva e avançar'}
+                </button>
+                {existing && (
+                  <button type="button" onClick={() => setIsEditing(false)} className="btn-secondary">
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -169,6 +249,9 @@ interface ReplicaData {
   final_result: string;
   notes: string | null;
   closed_by_name?: string;
+  manager_signature?: string | null;
+  docente_signature?: string | null;
+  docente_signed_at?: string | null;
 }
 
 const RESULT_LABELS: Record<string, { label: string; color: string; bg: string }> = {
@@ -179,13 +262,24 @@ const RESULT_LABELS: Record<string, { label: string; color: string; bg: string }
 
 function ReplicaSection({ existing, onSave, saving, open, onToggle }: {
   existing: ReplicaData | null;
-  onSave: (finalResult: string, notes: string) => void;
+  onSave: (finalResult: string, notes: string, managerSignature: string) => void;
   saving: boolean;
   open: boolean;
   onToggle: () => void;
 }) {
+  const [isEditing, setIsEditing] = useState(!existing);
   const [finalResult, setFinalResult] = useState(existing?.final_result ?? 'adequado');
   const [notes, setNotes] = useState(existing?.notes ?? '');
+  const [signature, setSignature] = useState<string | null>(null);
+
+  function startEditing() {
+    setFinalResult(existing?.final_result ?? 'adequado');
+    setNotes(existing?.notes ?? '');
+    setSignature(null);
+    setIsEditing(true);
+  }
+
+  const locked = !!existing && !isEditing;
 
   return (
     <div style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', marginBottom: '1rem', overflow: 'hidden' }}>
@@ -205,33 +299,137 @@ function ReplicaSection({ existing, onSave, saving, open, onToggle }: {
 
       {open && (
         <div style={{ padding: '0 1.25rem 1.25rem' }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Resultado final *</label>
-            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-              {Object.entries(RESULT_LABELS).map(([value, meta]) => (
-                <button key={value} type="button" onClick={() => setFinalResult(value)}
-                  style={{
-                    padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '0.85rem', fontWeight: 700,
-                    border: finalResult === value ? `2px solid ${meta.color}` : '1px solid #E0E0E0',
-                    background: finalResult === value ? meta.bg : 'white',
-                    color: finalResult === value ? meta.color : '#888',
-                    cursor: 'pointer',
-                  }}>
-                  {meta.label}
-                </button>
-              ))}
+          {locked && existing ? (
+            <div>
+              {existing.docente_signature ? (
+                <div style={{ background: '#E8F5E9', border: '1px solid #A5D6A7', borderRadius: '0.5rem', padding: '0.75rem 1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <CheckCircle2 size={16} color="#2E7D32" />
+                  <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#2E7D32' }}>Ação Docente concluída — as duas assinaturas foram registradas.</p>
+                </div>
+              ) : (
+                <div style={{ background: '#FFF8E1', border: '1px solid #FFE082', borderRadius: '0.5rem', padding: '0.75rem 1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <CheckCircle2 size={16} color="#F57F17" />
+                  <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#F57F17' }}>Assinatura do gestor registrada — aguardando confirmação do docente.</p>
+                </div>
+              )}
+
+              <div style={{ marginBottom: '1rem' }}>
+                <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', marginBottom: '0.4rem' }}>Resultado final</p>
+                <span style={{
+                  display: 'inline-block', padding: '0.35rem 0.85rem', borderRadius: '0.5rem', fontSize: '0.85rem', fontWeight: 700,
+                  background: RESULT_LABELS[existing.final_result]?.bg, color: RESULT_LABELS[existing.final_result]?.color,
+                }}>
+                  {RESULT_LABELS[existing.final_result]?.label ?? existing.final_result}
+                </span>
+              </div>
+
+              {existing.notes && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', marginBottom: '0.4rem' }}>Observações finais</p>
+                  <p style={{ fontSize: '0.85rem', color: '#333', whiteSpace: 'pre-wrap' }}>{existing.notes}</p>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                {existing.manager_signature && (
+                  <div>
+                    <p style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.3rem' }}>Assinatura do gestor</p>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={existing.manager_signature} alt="Assinatura do gestor" style={{ maxWidth: 260, border: '1px solid #E0E0E0', borderRadius: '0.5rem' }} />
+                  </div>
+                )}
+                {existing.docente_signature && (
+                  <div>
+                    <p style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.3rem' }}>Assinatura do docente</p>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={existing.docente_signature} alt="Assinatura do docente" style={{ maxWidth: 260, border: '1px solid #E0E0E0', borderRadius: '0.5rem' }} />
+                    {existing.docente_signed_at && <p style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.2rem' }}>Assinado em {new Date(existing.docente_signed_at).toLocaleString('pt-BR')}</p>}
+                  </div>
+                )}
+              </div>
+
+              <button type="button" onClick={startEditing} className="btn-secondary" style={{ marginTop: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Pencil size={14} /> Reabrir e editar
+              </button>
+              <p style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.4rem' }}>
+                Reabrir exige uma nova assinatura do gestor{existing.docente_signature ? ' e uma nova confirmação do docente' : ''}.
+              </p>
             </div>
-          </div>
-          <div>
-            <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Observações finais (opcional)</label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-              style={{ width: '100%', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.6rem 0.75rem', fontSize: '0.85rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
-          </div>
-          <button onClick={() => onSave(finalResult, notes)} disabled={saving} className="btn-primary" style={{ marginTop: '1rem' }}>
-            {saving ? 'Salvando...' : existing ? 'Salvar alterações' : 'Fechar ciclo'}
-          </button>
+          ) : (
+            <>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Resultado final *</label>
+                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                  {Object.entries(RESULT_LABELS).map(([value, meta]) => (
+                    <button key={value} type="button" onClick={() => setFinalResult(value)}
+                      style={{
+                        padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '0.85rem', fontWeight: 700,
+                        border: finalResult === value ? `2px solid ${meta.color}` : '1px solid #E0E0E0',
+                        background: finalResult === value ? meta.bg : 'white',
+                        color: finalResult === value ? meta.color : '#888',
+                        cursor: 'pointer',
+                      }}>
+                      {meta.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Observações finais (opcional)</label>
+                <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
+                  style={{ width: '100%', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.6rem 0.75rem', fontSize: '0.85rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
+              </div>
+              <div style={{ marginBottom: '0.5rem' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Assinatura do gestor (encerramento) *</label>
+                <SignaturePad onChange={setSignature} />
+              </div>
+              <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <button onClick={() => signature && onSave(finalResult, notes, signature)} disabled={saving || !signature} className="btn-primary" style={{ opacity: !signature ? 0.5 : 1 }}>
+                  {saving ? 'Salvando...' : existing ? 'Salvar alterações' : 'Fechar ciclo'}
+                </button>
+                {existing && (
+                  <button type="button" onClick={() => setIsEditing(false)} className="btn-secondary">
+                    Cancelar
+                  </button>
+                )}
+              </div>
+              {!signature && <p style={{ fontSize: '0.72rem', color: '#C62828', marginTop: '0.4rem' }}>Desenhe a assinatura para poder salvar.</p>}
+              {existing && <p style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.4rem' }}>Ao salvar, a assinatura do docente será solicitada novamente.</p>}
+            </>
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+function AdvanceStage1Panel({ documentCount, onAdvance, advancing }: { documentCount: number; onAdvance: () => void; advancing: boolean }) {
+  const hasDocuments = documentCount > 0;
+  return (
+    <div style={{
+      background: hasDocuments ? '#E8F5E9' : '#FFF8E1',
+      border: `1px solid ${hasDocuments ? '#A5D6A7' : '#FFE082'}`,
+      borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1rem',
+      display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap',
+    }}>
+      <div style={{
+        width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+        background: hasDocuments ? '#C8E6C9' : '#FFE082',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Inbox size={18} color={hasDocuments ? '#2E7D32' : '#F57F17'} />
+      </div>
+      <div style={{ flex: 1, minWidth: 200 }}>
+        <p style={{ fontWeight: 700, fontSize: '0.88rem', color: hasDocuments ? '#2E7D32' : '#F57F17' }}>
+          {hasDocuments ? `${documentCount} documento(s) recebido(s)` : 'Nenhum documento recebido ainda'}
+        </p>
+        <p style={{ fontSize: '0.78rem', color: '#666', marginTop: '0.1rem' }}>
+          Você pode avançar para a Etapa 2 assim que decidir que a documentação está OK — o checklist detalhado abaixo é opcional e pode ser preenchido a qualquer momento.
+        </p>
+      </div>
+      <button onClick={onAdvance} disabled={advancing} className="btn-primary" style={{ flexShrink: 0 }}>
+        {advancing ? 'Avançando...' : <>Avançar para Etapa 2 <ArrowRight size={15} /></>}
+      </button>
     </div>
   );
 }
@@ -240,25 +438,62 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
   const router = useRouter();
   const deadlines = [cycle.stage1_deadline, cycle.stage2_deadline, cycle.stage3_deadline, cycle.stage4_deadline];
   const isConcluded = cycle.status === 'concluido';
+  const isArchived = cycle.status === 'cancelado';
 
   const [stage1, setStage1] = useState<StageReview | null>(null);
   const [stage2, setStage2] = useState<StageReview | null>(null);
   const [stage3, setStage3] = useState<FeedbackSession | null>(null);
   const [stage4, setStage4] = useState<ReplicaData | null>(null);
+  const [documentCount, setDocumentCount] = useState(0);
   const [openSection, setOpenSection] = useState<number>(cycle.current_stage);
   const [saving, setSaving] = useState<number | null>(null);
+  const [advancing, setAdvancing] = useState(false);
+  const [restarting, setRestarting] = useState(false);
+  const [generatingComprovante, setGeneratingComprovante] = useState(false);
   const [error, setError] = useState('');
   const [version, setVersion] = useState(0);
 
   async function load() {
-    const [s1, s2, s3, s4] = await Promise.all([
+    const [s1, s2, s3, s4, docs] = await Promise.all([
       fetch(`/api/ciclos/${cycle.id}/etapa1`).then(r => r.json()),
       fetch(`/api/ciclos/${cycle.id}/etapa2`).then(r => r.json()),
       fetch(`/api/ciclos/${cycle.id}/etapa3`).then(r => r.json()),
       fetch(`/api/ciclos/${cycle.id}/etapa4`).then(r => r.json()),
+      fetch(`/api/ciclos/${cycle.id}/documentos`).then(r => r.json()),
     ]);
     setStage1(s1); setStage2(s2); setStage3(s3); setStage4(s4);
+    setDocumentCount(Array.isArray(docs) ? docs.length : 0);
     setVersion(v => v + 1);
+  }
+
+  async function gerarComprovante() {
+    setGeneratingComprovante(true); setError('');
+    const res = await fetch(`/api/ciclos/${cycle.id}/comprovante`, { method: 'POST' });
+    const data = await res.json();
+    setGeneratingComprovante(false);
+    if (!res.ok) { setError(data.error); return; }
+    router.refresh();
+  }
+
+  async function avancarEtapa1() {
+    setAdvancing(true); setError('');
+    const res = await fetch(`/api/ciclos/${cycle.id}/etapa1/avancar`, { method: 'POST' });
+    const data = await res.json();
+    setAdvancing(false);
+    if (!res.ok) { setError(data.error); return; }
+    load();
+    router.refresh();
+  }
+
+  async function reiniciarCiclo() {
+    if (!confirm(`Reiniciar a Ação Docente de ${cycle.teacher_name}? O ciclo atual fica arquivado no histórico (você pode consultar ou descartar depois) e um novo ciclo é aberto na Etapa 1.`)) return;
+    setRestarting(true); setError('');
+    const res = await fetch(`/api/ciclos/${cycle.id}/reiniciar`, { method: 'POST' });
+    const data = await res.json();
+    setRestarting(false);
+    if (!res.ok) { setError(data.error); return; }
+    router.push(`/gestor/ciclos/${data.id}`);
+    router.refresh();
   }
 
   // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- data fetch on mount, setState happens inside the async callback, not synchronously
@@ -275,21 +510,39 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
-      <Header userName={userName} role={role} />
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+    <AppShell userName={userName} role={role} maxWidth={900}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
           <button onClick={() => router.push('/gestor')}
             style={{ background: 'white', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.4rem', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
             <ArrowLeft size={18} color="#555" />
           </button>
-          <div>
+          <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#211C5C' }}>{cycle.teacher_name}</h1>
             <p style={{ fontSize: '0.8rem', color: '#888' }}>
               Semestre {cycle.semester_label} {cycle.manager_name ? `· Gestor: ${cycle.manager_name}` : ''}
             </p>
           </div>
+          {!isArchived && (
+            <button onClick={reiniciarCiclo} disabled={restarting}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                background: '#FFEBEE', border: '1px solid #FFCDD2', borderRadius: '0.5rem',
+                padding: '0.5rem 0.9rem', color: '#C62828', cursor: restarting ? 'not-allowed' : 'pointer',
+                fontSize: '0.8rem', fontWeight: 700, opacity: restarting ? 0.6 : 1,
+              }}>
+              <RefreshCcw size={14} /> {restarting ? 'Reiniciando...' : 'Reiniciar Ação Docente'}
+            </button>
+          )}
         </div>
+
+        {isArchived && (
+          <div style={{ background: '#F5F5F5', border: '1px solid #E0E0E0', borderRadius: '0.75rem', padding: '0.85rem 1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <RefreshCcw size={15} color="#888" />
+            <p style={{ fontSize: '0.83rem', color: '#666' }}>
+              Este é um ciclo <b>arquivado</b> (foi reiniciado). Fica guardado aqui só para consulta no histórico.
+            </p>
+          </div>
+        )}
 
         {/* Stepper */}
         <div style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', padding: '1.5rem', marginBottom: '1.5rem' }}>
@@ -334,6 +587,38 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
           </div>
         )}
 
+        {isConcluded && (
+          <div style={{ background: 'white', border: '1px solid #E0E0E0', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#E3F2FD', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <FileDown size={18} color="#1565C0" />
+            </div>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <p style={{ fontWeight: 700, fontSize: '0.88rem', color: '#211C5C' }}>Comprovante de Ação Docente (PDF)</p>
+              <p style={{ fontSize: '0.78rem', color: '#888', marginTop: '0.1rem' }}>
+                {cycle.comprovante_blob_pathname
+                  ? `Gerado em ${cycle.comprovante_generated_at ? new Date(cycle.comprovante_generated_at).toLocaleString('pt-BR') : ''} · reúne as respostas de todas as etapas e as duas assinaturas`
+                  : stage4?.docente_signature
+                    ? 'As duas assinaturas já foram coletadas — gere o comprovante abaixo'
+                    : 'Disponível assim que o docente assinar o encerramento'}
+              </p>
+            </div>
+            {cycle.comprovante_blob_pathname ? (
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <a href={`/api/ciclos/${cycle.id}/comprovante/download`} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ textDecoration: 'none' }}>
+                  <FileDown size={15} /> Baixar PDF
+                </a>
+                <button onClick={gerarComprovante} disabled={generatingComprovante} className="btn-secondary">
+                  {generatingComprovante ? 'Gerando...' : 'Gerar novamente'}
+                </button>
+              </div>
+            ) : stage4?.docente_signature ? (
+              <button onClick={gerarComprovante} disabled={generatingComprovante} className="btn-primary">
+                {generatingComprovante ? 'Gerando...' : 'Gerar comprovante'}
+              </button>
+            ) : null}
+          </div>
+        )}
+
         {error && (
           <div style={{ background: '#FFEBEE', border: '1px solid #FFCDD2', borderRadius: '0.5rem', padding: '0.75rem 1rem', marginBottom: '1rem', color: '#C62828', fontSize: '0.85rem' }}>
             {error}
@@ -341,6 +626,10 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
         )}
 
         <DocumentsPanel cycleId={cycle.id} canUpload={false} canDelete={true} />
+
+        {!isConcluded && !isArchived && cycle.current_stage === 1 && (
+          <AdvanceStage1Panel documentCount={documentCount} onAdvance={avancarEtapa1} advancing={advancing} />
+        )}
 
         <ChecklistSection
           key={`s1-${version}`}
@@ -379,12 +668,11 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
         <ReplicaSection
           key={`s4-${version}`}
           existing={stage4}
-          onSave={(finalResult, notes) => submit(4, `/api/ciclos/${cycle.id}/etapa4`, { final_result: finalResult, notes })}
+          onSave={(finalResult, notes, managerSignature) => submit(4, `/api/ciclos/${cycle.id}/etapa4`, { final_result: finalResult, notes, manager_signature: managerSignature })}
           saving={saving === 4}
           open={openSection === 4}
           onToggle={() => setOpenSection(s => s === 4 ? 0 : 4)}
         />
-      </div>
-    </div>
+    </AppShell>
   );
 }

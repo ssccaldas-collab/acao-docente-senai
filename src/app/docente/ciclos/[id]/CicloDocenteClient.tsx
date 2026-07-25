@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/Header';
+import { AppShell } from '@/components/AppShell';
 import { DocumentsPanel } from '@/components/DocumentsPanel';
+import { SignaturePad } from '@/components/SignaturePad';
 import { ArrowLeft, FileText, Eye, MessageSquare, RotateCcw, CheckCircle2, Circle } from 'lucide-react';
 
 export interface CycleDetail {
@@ -28,6 +29,9 @@ interface FeedbackSession {
 interface ReplicaData {
   final_result: 'adequado' | 'parcialmente_adequado' | 'inadequado';
   notes: string | null;
+  manager_signature: string | null;
+  docente_signature: string | null;
+  docente_signed_at: string | null;
 }
 
 const STEPS = [
@@ -56,6 +60,8 @@ export function CicloDocenteClient({ userName, cycle }: { userName: string; cycl
   const [stage3, setStage3] = useState<FeedbackSession | null>(null);
   const [stage4, setStage4] = useState<ReplicaData | null>(null);
   const [ackLoading, setAckLoading] = useState(false);
+  const [closingSignature, setClosingSignature] = useState<string | null>(null);
+  const [signLoading, setSignLoading] = useState(false);
 
   function load() {
     fetch(`/api/ciclos/${cycle.id}/etapa3`).then(r => r.json()).then(setStage3);
@@ -65,6 +71,18 @@ export function CicloDocenteClient({ userName, cycle }: { userName: string; cycl
   // eslint-disable-next-line react-hooks/exhaustive-deps -- load only needs to run once on mount
   useEffect(() => { load(); }, []);
 
+  async function assinarEncerramento() {
+    if (!closingSignature) return;
+    setSignLoading(true);
+    await fetch(`/api/ciclos/${cycle.id}/etapa4/assinatura`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ docente_signature: closingSignature }),
+    });
+    setSignLoading(false);
+    load();
+  }
+
   async function confirmarCiencia() {
     setAckLoading(true);
     await fetch(`/api/ciclos/${cycle.id}/etapa3/ciencia`, { method: 'PATCH' });
@@ -73,9 +91,7 @@ export function CicloDocenteClient({ userName, cycle }: { userName: string; cycl
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
-      <Header userName={userName} role="docente" />
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1.5rem' }}>
+    <AppShell userName={userName} role="docente" maxWidth={900}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
           <button onClick={() => router.push('/docente')}
             style={{ background: 'white', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.4rem', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
@@ -130,6 +146,41 @@ export function CicloDocenteClient({ userName, cycle }: { userName: string; cycl
           </div>
         )}
 
+        {isConcluded && stage4 && (
+          <div style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', padding: '1.5rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#211C5C', marginBottom: '0.75rem' }}>Assinaturas de encerramento</h3>
+
+            {stage4.manager_signature && (
+              <div style={{ marginBottom: '1rem' }}>
+                <p style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.3rem' }}>Gestor</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={stage4.manager_signature} alt="Assinatura do gestor" style={{ maxWidth: 300, border: '1px solid #E0E0E0', borderRadius: '0.5rem' }} />
+              </div>
+            )}
+
+            {stage4.docente_signature ? (
+              <div>
+                <div style={{ background: '#E8F5E9', border: '1px solid #A5D6A7', borderRadius: '0.5rem', padding: '0.75rem 1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <CheckCircle2 size={16} color="#2E7D32" />
+                  <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#2E7D32' }}>Ação Docente concluída — sua assinatura foi registrada com sucesso.</p>
+                </div>
+                <p style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.3rem' }}>Sua assinatura</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={stage4.docente_signature} alt="Sua assinatura" style={{ maxWidth: 300, border: '1px solid #E0E0E0', borderRadius: '0.5rem' }} />
+                {stage4.docente_signed_at && <p style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.2rem' }}>Assinado em {new Date(stage4.docente_signed_at).toLocaleString('pt-BR')}</p>}
+              </div>
+            ) : (
+              <div>
+                <p style={{ fontSize: '0.82rem', color: '#555', marginBottom: '0.5rem' }}>Assine abaixo para confirmar o encerramento do seu ciclo de Ação Docente:</p>
+                <SignaturePad onChange={setClosingSignature} />
+                <button onClick={assinarEncerramento} disabled={signLoading || !closingSignature} className="btn-primary" style={{ marginTop: '0.75rem', opacity: !closingSignature ? 0.5 : 1 }}>
+                  {signLoading ? 'Salvando...' : 'Confirmar assinatura'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         <DocumentsPanel cycleId={cycle.id} canUpload={!isConcluded && cycle.current_stage === 1} canDelete={!isConcluded && cycle.current_stage === 1} />
 
         {stage3 && (
@@ -161,7 +212,6 @@ export function CicloDocenteClient({ userName, cycle }: { userName: string; cycl
                 : `Aguardando o gestor avançar para a Etapa ${cycle.current_stage} (${STEPS[cycle.current_stage - 1].label}).`}
           </p>
         </div>
-      </div>
-    </div>
+    </AppShell>
   );
 }

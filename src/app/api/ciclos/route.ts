@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { getSession, isGestor } from '@/lib/auth';
 import { getDB } from '@/lib/db';
+import { sendCycleStartedEmail } from '@/lib/mailer';
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -22,7 +23,8 @@ export async function GET(req: NextRequest) {
       ec.created_at, ec.updated_at,
       t.id as teacher_id, t.name as teacher_name,
       m.id as manager_id, m.name as manager_name,
-      s.id as semester_id, s.label as semester_label
+      s.id as semester_id, s.label as semester_label,
+      (SELECT COUNT(*) FROM documents d WHERE d.cycle_id = ec.id) as document_count
     FROM evaluation_cycles ec
     JOIN users t ON t.id = ec.teacher_id
     LEFT JOIN users m ON m.id = ec.manager_id
@@ -34,4 +36,45 @@ export async function GET(req: NextRequest) {
   `;
 
   return NextResponse.json(rows);
+}
+
+export async function POST(req: NextRequest) {
+  const session = await getSession();
+  if (!session || !isGestor(session.role)) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+
+  const { teacher_id, semester_id } = await req.json();
+  if (!teacher_id || !semester_id) {
+    return NextResponse.json({ error: 'Docente e semestre são obrigatórios' }, { status: 400 });
+  }
+
+  const sql = getDB();
+
+  const teachers = await sql`SELECT id, name, email FROM users WHERE id = ${teacher_id} AND role = 'docente' AND active = TRUE`;
+  if (teachers.length === 0) return NextResponse.json({ error: 'Docente não encontrado ou inativo' }, { status: 404 });
+  const teacher = teachers[0];
+
+  const semesters = await sql`SELECT * FROM semesters WHERE id = ${semester_id}`;
+  if (semesters.length === 0) return NextResponse.json({ error: 'Semestre não encontrado' }, { status: 404 });
+  const semester = semesters[0];
+
+  const existing = await sql`
+    SELECT id FROM evaluation_cycles
+    WHERE teacher_id = ${teacher_id} AND semester_id = ${semester_id} AND status != 'cancelado'
+  `;
+  if (existing.length > 0) {
+    return NextResponse.json({ error: 'Este docente já tem um ciclo de Ação Docente neste semestre' }, { status: 409 });
+  }
+
+  const result = await sql`
+    INSERT INTO evaluation_cycles (teacher_id, semester_id, manager_id, stage1_deadline, stage2_deadline, status)
+    VALUES (${teacher_id}, ${semester_id}, ${session.id}, ${semester.default_stage1_deadline}, ${semester.default_stage2_deadline}, 'nao_iniciado')
+    RETURNING id
+  `;
+
+  const deadlineText = semester.default_stage1_deadline
+    ? new Date(semester.default_stage1_deadline).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
+    : null;
+  sendCycleStartedEmail(teacher.email, teacher.name, deadlineText).catch(() => {});
+
+  return NextResponse.json({ ok: true, id: result[0].id });
 }

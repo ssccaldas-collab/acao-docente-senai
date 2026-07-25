@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/Header';
+import { AppShell } from '@/components/AppShell';
 import { ArrowLeft, GraduationCap, Search, ChevronRight, BadgeCheck } from 'lucide-react';
 import type { Role } from '@/lib/auth';
 
@@ -25,15 +25,13 @@ export function DocentesClient({ userName, role }: { userName: string; role: Rol
     fetch('/api/usuarios').then(r => r.json()).then(data => { setUsers(data); setLoading(false); });
   }, []);
 
-  const docentes = users.filter(u => u.role === 'docente' && (
+  const docentes = users.filter(u => u.role === 'docente' && u.active && (
     u.name.toLowerCase().includes(search.toLowerCase()) ||
     (u.registration_number || '').toLowerCase().includes(search.toLowerCase())
   ));
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
-      <Header userName={userName} role={role} />
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1.5rem' }}>
+    <AppShell userName={userName} role={role} maxWidth={900}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
           <button onClick={() => router.push('/gestor')}
             style={{ background: 'white', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.4rem', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
@@ -61,7 +59,7 @@ export function DocentesClient({ userName, role }: { userName: string; role: Rol
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {docentes.map(d => (
               <div key={d.id} onClick={() => router.push(`/gestor/docentes/${d.id}`)}
-                style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', padding: '0.9rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', opacity: d.active ? 1 : 0.55 }}>
+                style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', padding: '0.9rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
                 <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#E8F5E9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <GraduationCap size={18} color="#2E7D32" />
                 </div>
@@ -74,7 +72,6 @@ export function DocentesClient({ userName, role }: { userName: string; role: Rol
                       </span>
                     )}
                     <span style={{ fontSize: '0.75rem', color: '#aaa' }}>{d.email}</span>
-                    {!d.active && <span className="badge-inativo">Inativo</span>}
                   </div>
                 </div>
                 <ChevronRight size={16} color="#bbb" />
@@ -82,7 +79,6 @@ export function DocentesClient({ userName, role }: { userName: string; role: Rol
             ))}
           </div>
         )}
-      </div>
-    </div>
+    </AppShell>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/Header';
+import { AppShell } from '@/components/AppShell';
 import { ArrowLeft, Users, Plus, Trash2, Search, User, ShieldCheck, GraduationCap, Eye, EyeOff, BadgeCheck } from 'lucide-react';
 import type { Role } from '@/lib/auth';
 
@@ -62,8 +62,8 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
     load();
   }
 
-  async function deactivateUser(id: number, name: string) {
-    if (!confirm(`Desativar o usuário "${name}"? Ele não conseguirá mais acessar o sistema.`)) return;
+  async function deleteUser(id: number, name: string) {
+    if (!confirm(`Excluir permanentemente o usuário "${name}"? Essa ação não pode ser desfeita: todos os ciclos de avaliação, documentos e respostas relacionados a ele também serão apagados.`)) return;
     await fetch(`/api/usuarios/${id}`, { method: 'DELETE' });
     load();
   }
@@ -121,7 +121,7 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
+    <AppShell userName={userName} role={role} maxWidth={900}>
       {editUser && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div style={{ background: 'white', borderRadius: '1rem', padding: '1.5rem', width: '100%', maxWidth: 560, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -168,9 +168,6 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
           </div>
         </div>
       )}
-      <Header userName={userName} role={role} />
-
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <button onClick={() => router.push('/gestor')}
@@ -279,12 +276,10 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
                             style={{ background: '#E3F2FD', border: 'none', borderRadius: '0.4rem', padding: '0.4rem', color: '#1565C0', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                             <PencilIcon />
                           </button>
-                          {u.active && (
-                            <button onClick={() => deactivateUser(u.id, u.name)}
-                              style={{ background: '#FFEBEE', border: 'none', borderRadius: '0.4rem', padding: '0.4rem', color: '#C62828', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                              <Trash2 size={14} />
-                            </button>
-                          )}
+                          <button onClick={() => deleteUser(u.id, u.name)}
+                            style={{ background: '#FFEBEE', border: 'none', borderRadius: '0.4rem', padding: '0.4rem', color: '#C62828', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -298,7 +293,6 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
             )}
           </>
         )}
-      </div>
-    </div>
+    </AppShell>
   );
 }

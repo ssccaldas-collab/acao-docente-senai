@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
 import { getSession } from '@/lib/auth';
 import { getDB } from '@/lib/db';
+import { sendDocumentUploadedEmail } from '@/lib/mailer';
 
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = [
@@ -43,7 +44,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const sql = getDB();
 
-  const cycles = await sql`SELECT teacher_id, current_stage, status FROM evaluation_cycles WHERE id = ${Number(id)}`;
+  const cycles = await sql`
+    SELECT ec.teacher_id, ec.current_stage, ec.status, u.name as teacher_name, m.email as manager_email
+    FROM evaluation_cycles ec
+    JOIN users u ON u.id = ec.teacher_id
+    LEFT JOIN users m ON m.id = ec.manager_id
+    WHERE ec.id = ${Number(id)}
+  `;
   if (cycles.length === 0) return NextResponse.json({ error: 'Ciclo não encontrado' }, { status: 404 });
   const cycle = cycles[0];
   if (cycle.teacher_id !== session.id) return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
@@ -67,6 +74,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     VALUES (${Number(id)}, ${session.id}, ${documentType}, ${file.name}, ${blob.url}, ${blob.pathname}, ${file.size}, ${file.type})
     RETURNING id, document_type, file_name, size_bytes, content_type, uploaded_at, uploaded_by
   `;
+
+  if (cycle.manager_email) {
+    sendDocumentUploadedEmail(cycle.manager_email as string, cycle.teacher_name as string, file.name).catch(() => {});
+  }
 
   return NextResponse.json(result[0]);
 }
