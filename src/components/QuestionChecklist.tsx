@@ -1,17 +1,23 @@
 'use client';
 
 import { Check, X } from 'lucide-react';
-import type { FormQuestion, FormAnswers } from '@/lib/formQuestions';
+import type { FormQuestion, FormAnswers, QuestionAnswer } from '@/lib/formQuestions';
 
 interface Props {
   questions: FormQuestion[];
   answers: FormAnswers;
-  onChange: (id: string, value: string | number) => void;
+  onChange: (id: string, value: QuestionAnswer['value']) => void;
   disabled?: boolean;
 }
 
 export function QuestionChecklist({ questions, answers, onChange, disabled }: Props) {
   const labelStyle = { fontSize: '0.88rem', fontWeight: 600 as const, color: '#211C5C', display: 'block' as const, marginBottom: '0.5rem' };
+  const inputStyle = { width: '100%', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.55rem 0.75rem', fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' };
+
+  function toggleMultipla(id: string, option: string, current: string[]) {
+    const next = current.includes(option) ? current.filter(o => o !== option) : [...current, option];
+    onChange(id, next);
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -35,7 +41,7 @@ export function QuestionChecklist({ questions, answers, onChange, disabled }: Pr
                     color: current === 'ok' ? '#2E7D32' : '#888',
                     cursor: disabled ? 'not-allowed' : 'pointer',
                   }}>
-                  <Check size={14} /> OK
+                  <Check size={14} /> Sim
                 </button>
                 <button type="button" disabled={disabled} onClick={() => onChange(q.id, 'nao_ok')}
                   style={{
@@ -46,7 +52,7 @@ export function QuestionChecklist({ questions, answers, onChange, disabled }: Pr
                     color: current === 'nao_ok' ? '#C8102E' : '#888',
                     cursor: disabled ? 'not-allowed' : 'pointer',
                   }}>
-                  <X size={14} /> Não OK
+                  <X size={14} /> Não
                 </button>
               </div>
             )}
@@ -75,8 +81,67 @@ export function QuestionChecklist({ questions, answers, onChange, disabled }: Pr
                 onChange={e => onChange(q.id, e.target.value)}
                 rows={3}
                 placeholder="Escreva aqui..."
-                style={{ width: '100%', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.6rem 0.75rem', fontSize: '0.85rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
+                style={{ ...inputStyle, resize: 'vertical' }}
               />
+            )}
+
+            {q.type === 'texto_curto' && (
+              <input
+                type="text"
+                disabled={disabled}
+                value={typeof current === 'string' ? current : ''}
+                onChange={e => onChange(q.id, e.target.value)}
+                placeholder="Digite aqui..."
+                style={inputStyle}
+              />
+            )}
+
+            {q.type === 'data' && (
+              <input
+                type="date"
+                disabled={disabled}
+                value={typeof current === 'string' ? current : ''}
+                onChange={e => onChange(q.id, e.target.value)}
+                style={{ ...inputStyle, width: 'auto' }}
+              />
+            )}
+
+            {q.type === 'escolha_unica' && (
+              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                {(q.options ?? []).map(option => (
+                  <button key={option} type="button" disabled={disabled} onClick={() => onChange(q.id, option)}
+                    style={{
+                      padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '0.85rem', fontWeight: 700,
+                      border: current === option ? '2px solid #4338CA' : '1px solid #E0E0E0',
+                      background: current === option ? '#EDEBFC' : 'white',
+                      color: current === option ? '#4338CA' : '#888',
+                      cursor: disabled ? 'not-allowed' : 'pointer',
+                    }}>
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {q.type === 'escolha_multipla' && (
+              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                {(q.options ?? []).map(option => {
+                  const selected = Array.isArray(current) && current.includes(option);
+                  return (
+                    <button key={option} type="button" disabled={disabled} onClick={() => toggleMultipla(q.id, option, Array.isArray(current) ? current : [])}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '0.4rem',
+                        padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '0.85rem', fontWeight: 700,
+                        border: selected ? '2px solid #4338CA' : '1px solid #E0E0E0',
+                        background: selected ? '#EDEBFC' : 'white',
+                        color: selected ? '#4338CA' : '#888',
+                        cursor: disabled ? 'not-allowed' : 'pointer',
+                      }}>
+                      {selected && <Check size={14} />} {option}
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
         );

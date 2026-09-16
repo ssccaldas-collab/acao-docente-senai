@@ -8,7 +8,7 @@ import { DocumentsPanel } from '@/components/DocumentsPanel';
 import { SignaturePad } from '@/components/SignaturePad';
 import { ArrowLeft, FileText, Eye, MessageSquare, RotateCcw, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Inbox, RefreshCcw, FileDown, Pencil } from 'lucide-react';
 import type { Role } from '@/lib/auth';
-import { STAGE1_DOCUMENTATION_QUESTIONS, STAGE2_CLASSROOM_OBSERVATION_QUESTIONS, type FormAnswers } from '@/lib/formQuestions';
+import { STAGE1_DOCUMENTATION_QUESTIONS, STAGE2_CLASSROOM_OBSERVATION_QUESTIONS, type FormAnswers, type QuestionAnswer } from '@/lib/formQuestions';
 
 export interface CycleDetail {
   id: number;
@@ -68,7 +68,7 @@ function ChecklistSection({
   const [comment, setComment] = useState(existing?.overall_comment ?? '');
   const [date, setDate] = useState(toDateInputValue(existing?.observation_date ?? null));
 
-  function handleChange(id: string, value: string | number) {
+  function handleChange(id: string, value: QuestionAnswer['value']) {
     setAnswers(a => ({ ...a, [id]: { value } }));
   }
 

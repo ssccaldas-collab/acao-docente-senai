@@ -31,9 +31,11 @@ const styles = StyleSheet.create({
 
 function answerLabel(q: FormQuestion, answers: FormAnswers): string {
   const v = answers?.[q.id]?.value;
-  if (v === undefined || v === null || v === '') return '—';
-  if (q.type === 'sim_nao') return v === 'ok' ? 'OK' : 'NÃO OK';
+  if (v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)) return '—';
+  if (q.type === 'sim_nao') return v === 'ok' ? 'SIM' : 'NÃO';
   if (q.type === 'nota') return `${v}/${q.scale?.max ?? 5}`;
+  if (q.type === 'data') return new Date(`${v}T00:00:00`).toLocaleDateString('pt-BR');
+  if (Array.isArray(v)) return v.join(', ');
   return String(v);
 }
 

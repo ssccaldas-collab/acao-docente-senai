@@ -1,4 +1,4 @@
-export type QuestionType = 'sim_nao' | 'nota' | 'texto';
+export type QuestionType = 'sim_nao' | 'nota' | 'texto' | 'texto_curto' | 'data' | 'escolha_unica' | 'escolha_multipla';
 
 export interface FormQuestion {
   id: string;
@@ -7,18 +7,29 @@ export interface FormQuestion {
   required?: boolean;
   helpText?: string;
   scale?: { min: number; max: number };
+  options?: string[];
 }
 
-// Checklist inicial — ajuste os textos livremente, não é necessário mexer em schema ou rotas.
+// Migrado do formulário "AÇÃO DOCENTE - PRÉVIA DO PLANO DE ENSINO_v2".
 export const STAGE1_DOCUMENTATION_QUESTIONS: FormQuestion[] = [
-  { id: 'plano_aula_entregue', label: 'Plano de aula entregue dentro do prazo', type: 'sim_nao', required: true },
-  { id: 'plano_aula_atualizado', label: 'Plano de aula atualizado e coerente com o plano de curso', type: 'sim_nao', required: true },
-  { id: 'diario_classe_em_dia', label: 'Diário de classe preenchido corretamente e em dia', type: 'sim_nao', required: true },
-  { id: 'frequencia_registrada', label: 'Frequência dos alunos registrada corretamente', type: 'sim_nao', required: true },
-  { id: 'material_didatico_coerente', label: 'Material didático coerente com o plano de aula', type: 'sim_nao', required: true },
-  { id: 'avaliacoes_registradas', label: 'Avaliações aplicadas e notas registradas no sistema', type: 'sim_nao', required: true },
-  { id: 'carga_horaria_cumprida', label: 'Carga horária prevista está sendo cumprida', type: 'sim_nao', required: true },
-  { id: 'observacoes_documentacao', label: 'Observações gerais sobre a documentação', type: 'texto' },
+  { id: 'nome_gestor', label: 'Nome do(a) Gestor(a) responsável', type: 'texto_curto', required: true },
+  { id: 'cargo', label: 'Cargo', type: 'escolha_unica', required: true, options: ['Orientador de Prática Profissional', 'Coordenador de Atividade Técnica e Pedagógica'] },
+  { id: 'data_acao_docente', label: 'Data da Ação docente', type: 'data', required: true },
+  { id: 'nome_docente', label: 'Nome do(a) Docente', type: 'texto_curto', required: true },
+  { id: 'modalidades_curso', label: 'Em quais modalidades de curso o(a) Docente leciona?', type: 'escolha_multipla', required: true, options: ['CAI', 'CT', 'CST', 'FIC'] },
+  { id: 'quantidade_uc', label: 'Quantas UC o(a) Docente leciona?', type: 'escolha_unica', required: true, options: ['01', '02', '03', '04', '05', '06'] },
+  { id: 'curso_analise', label: 'Qual foi o curso escolhido para a análise?', type: 'texto_curto', required: true },
+  { id: 'turma_analise', label: 'Qual foi a turma escolhida para a análise?', type: 'texto_curto', required: true },
+  { id: 'uc_analise', label: 'Qual foi a UC escolhida para a análise?', type: 'texto_curto', required: true },
+  { id: 'estrategia_desafiadora', label: 'Qual a Estratégia Desafiadora definida para avaliação da UC?', type: 'escolha_unica', required: true, options: ['Situação Problema', 'Estudo de Caso', 'Projeto', 'Projeto Integrador', 'Pesquisa Aplicada'] },
+  { id: 'estrategia_contextualizada', label: 'A Estratégia Desafiadora possui contextualização de acordo com o Perfil Profissional do curso?', type: 'sim_nao', required: true },
+  { id: 'carga_horaria_distribuida', label: 'A carga horária da UC está distribuída corretamente conforme Cronograma ou Planejamento de Ensino?', type: 'sim_nao', required: true },
+  { id: 'tabela_criterios_criada', label: 'O(A) Docente criou a Tabela de Critérios?', type: 'sim_nao', required: true },
+  { id: 'criterios_de_acordo', label: 'Os critérios estão de acordo com a Capacidade a ser avaliada?', type: 'sim_nao', required: true },
+  { id: 'tabela_niveis_criada', label: 'O(A) Docente criou a Tabela de Níveis de Desempenho?', type: 'sim_nao', required: true },
+  { id: 'conclusao', label: 'Conclusão', type: 'texto', required: true },
+  { id: 'acao_satisfatoria', label: 'A ação docente é satisfatória?', type: 'sim_nao', required: true },
+  { id: 'acompanhamento_continuo', label: 'Há necessidade de adotar um acompanhamento contínuo?', type: 'sim_nao', required: true },
 ];
 
 export const STAGE2_CLASSROOM_OBSERVATION_QUESTIONS: FormQuestion[] = [
@@ -35,15 +46,21 @@ export const STAGE2_CLASSROOM_OBSERVATION_QUESTIONS: FormQuestion[] = [
 ];
 
 export interface QuestionAnswer {
-  value: string | number;
+  value: string | number | string[];
   comment?: string;
 }
 export type FormAnswers = Record<string, QuestionAnswer>;
 
+function isEmptyValue(value: QuestionAnswer['value'] | undefined): boolean {
+  if (value === undefined || value === '') return true;
+  if (Array.isArray(value)) return value.length === 0;
+  return false;
+}
+
 export function validateAnswers(questions: FormQuestion[], answers: FormAnswers): string[] {
   const errors: string[] = [];
   for (const q of questions) {
-    if (q.required && (answers[q.id]?.value === undefined || answers[q.id]?.value === '')) {
+    if (q.required && isEmptyValue(answers[q.id]?.value)) {
       errors.push(`Pergunta obrigatória não respondida: ${q.label}`);
     }
   }
