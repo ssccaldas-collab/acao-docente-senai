@@ -102,6 +102,12 @@ function ChecklistSection({
         <div style={{ padding: '0 1.25rem 1.25rem' }}>
           {locked && existing ? (
             <div>
+              <div style={{ background: '#E8F5E9', border: '1px solid #A5D6A7', borderRadius: '0.5rem', padding: '0.75rem 1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle2 size={16} color="#2E7D32" />
+                <p style={{ fontSize: '0.82rem', fontWeight: 700, color: '#2E7D32' }}>
+                  Etapa concluída — pode avançar. Fica bloqueada até você clicar em &quot;Reabrir e editar&quot;.
+                </p>
+              </div>
               {showDate && existing.observation_date && (
                 <div style={{ marginBottom: '1rem' }}>
                   <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', marginBottom: '0.3rem' }}>Data da aula observada</p>
@@ -198,6 +204,12 @@ function DevolutivaSection({ existing, onSave, saving, open, onToggle }: {
         <div style={{ padding: '0 1.25rem 1.25rem' }}>
           {locked && existing ? (
             <div>
+              <div style={{ background: '#E8F5E9', border: '1px solid #A5D6A7', borderRadius: '0.5rem', padding: '0.75rem 1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle2 size={16} color="#2E7D32" />
+                <p style={{ fontSize: '0.82rem', fontWeight: 700, color: '#2E7D32' }}>
+                  Etapa concluída — pode avançar. Fica bloqueada até você clicar em &quot;Reabrir e editar&quot;.
+                </p>
+              </div>
               <div style={{ marginBottom: '1rem' }}>
                 <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', marginBottom: '0.3rem' }}>Data da devolutiva</p>
                 <p style={{ fontSize: '0.85rem', color: '#333' }}>{fmtDate(existing.session_date)}</p>
