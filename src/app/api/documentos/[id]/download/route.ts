@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { get } from '@vercel/blob';
-import { getSession } from '@/lib/auth';
+import { getSession, isGestor, canAccessUnidade } from '@/lib/auth';
 import { getDB } from '@/lib/db';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -11,15 +11,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const sql = getDB();
 
   const docs = await sql`
-    SELECT d.file_name, d.blob_pathname, d.content_type, ec.teacher_id
+    SELECT d.file_name, d.blob_pathname, d.content_type, ec.teacher_id, t.unidade as teacher_unidade
     FROM documents d
     JOIN evaluation_cycles ec ON ec.id = d.cycle_id
+    JOIN users t ON t.id = ec.teacher_id
     WHERE d.id = ${Number(id)}
   `;
   if (docs.length === 0) return NextResponse.json({ error: 'Documento não encontrado' }, { status: 404 });
   const doc = docs[0];
 
   if (session.role === 'docente' && doc.teacher_id !== session.id) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
+  }
+  if (isGestor(session.role) && !canAccessUnidade(session, doc.teacher_unidade)) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
   }
 

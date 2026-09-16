@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, isGestor } from '@/lib/auth';
 import { getDB } from '@/lib/db';
+import { checkCycleAccess, cycleAccessErrorResponse } from '@/lib/cycleAuth';
 
 const VALID_RESULTS = ['adequado', 'parcialmente_adequado', 'inadequado'];
 
@@ -9,14 +10,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
   const { id } = await params;
-  const sql = getDB();
-
-  const cycles = await sql`SELECT teacher_id FROM evaluation_cycles WHERE id = ${Number(id)}`;
-  if (cycles.length === 0) return NextResponse.json({ error: 'Ciclo não encontrado' }, { status: 404 });
-  if (session.role === 'docente' && cycles[0].teacher_id !== session.id) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
+  const access = await checkCycleAccess(Number(id), session);
+  if (!access.ok) {
+    const { error, status } = cycleAccessErrorResponse(access.status);
+    return NextResponse.json({ error }, { status });
   }
 
+  const sql = getDB();
   const rows = await sql`
     SELECT r.*, COALESCE(u.name, 'Usuário removido') as closed_by_name
     FROM stage4_replicas r
@@ -31,6 +31,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!session || !isGestor(session.role)) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
   const { id } = await params;
+  const access = await checkCycleAccess(Number(id), session);
+  if (!access.ok) {
+    const { error, status } = cycleAccessErrorResponse(access.status);
+    return NextResponse.json({ error }, { status });
+  }
+
   const { final_result, notes, manager_signature } = await req.json() as { final_result?: string; notes?: string; manager_signature?: string };
 
   if (!final_result || !VALID_RESULTS.includes(final_result)) {
@@ -41,8 +47,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const sql = getDB();
-  const cycles = await sql`SELECT id FROM evaluation_cycles WHERE id = ${Number(id)}`;
-  if (cycles.length === 0) return NextResponse.json({ error: 'Ciclo não encontrado' }, { status: 404 });
 
   // Se o resultado for editado depois, a assinatura anterior do docente perde validade e ele precisa assinar de novo.
   await sql`

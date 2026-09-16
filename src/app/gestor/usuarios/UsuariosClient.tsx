@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/AppShell';
-import { ArrowLeft, Users, Plus, Trash2, Search, User, ShieldCheck, GraduationCap, Eye, EyeOff, BadgeCheck } from 'lucide-react';
+import { ArrowLeft, Users, Plus, Trash2, Search, User, ShieldCheck, GraduationCap, Eye, EyeOff, BadgeCheck, Crown, Building2 } from 'lucide-react';
 import type { Role } from '@/lib/auth';
+import { UNIDADES } from '@/lib/unidades';
 
 interface UserRecord {
   id: number;
@@ -13,12 +14,14 @@ interface UserRecord {
   email: string;
   role: Role;
   active: boolean;
+  unidade: string | null;
   created_at: string;
 }
 
-const emptyForm = { name: '', registration_number: '', email: '', password: '', role: 'docente' as Role };
+const emptyForm = { name: '', registration_number: '', email: '', password: '', role: 'docente' as Role, unidade: '' };
 
 const roleMeta: Record<Role, { label: string; icon: typeof User; color: string; bg: string }> = {
+  master: { label: 'Masters', icon: Crown, color: '#B4590E', bg: '#FBEDDD' },
   coordenador: { label: 'Coordenadores', icon: ShieldCheck, color: '#4338CA', bg: '#FFEBEE' },
   oppp: { label: 'OPPs', icon: ShieldCheck, color: '#1565C0', bg: '#E3F2FD' },
   docente: { label: 'Docentes', icon: GraduationCap, color: '#2E7D32', bg: '#E8F5E9' },
@@ -26,6 +29,7 @@ const roleMeta: Record<Role, { label: string; icon: typeof User; color: string; 
 
 export function UsuariosClient({ userName, role }: { userName: string; role: Role }) {
   const router = useRouter();
+  const master = role === 'master';
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -36,7 +40,7 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
   const [error, setError] = useState('');
 
   const [editUser, setEditUser] = useState<UserRecord | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', registration_number: '', email: '', password: '', role: 'docente' as Role, active: true });
+  const [editForm, setEditForm] = useState({ name: '', registration_number: '', email: '', password: '', role: 'docente' as Role, active: true, unidade: '' });
   const [editError, setEditError] = useState('');
   const [editSaving, setEditSaving] = useState(false);
   const [showEditPass, setShowEditPass] = useState(false);
@@ -49,11 +53,12 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
 
   async function createUser() {
     if (!form.name || !form.password) { setError('Nome e senha são obrigatórios'); return; }
+    if (master && form.role !== 'master' && !form.unidade) { setError('Selecione a unidade'); return; }
     setSaving(true); setError('');
     const res = await fetch('/api/usuarios', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, role: master ? form.role : 'docente' }),
     });
     const data = await res.json();
     if (!res.ok) { setError(data.error); setSaving(false); return; }
@@ -77,6 +82,7 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
       password: '',
       role: u.role,
       active: u.active,
+      unidade: u.unidade || '',
     });
     setEditError('');
     setShowEditPass(false);
@@ -85,6 +91,7 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
   async function saveEdit() {
     if (!editUser) return;
     if (!editForm.name) { setEditError('Nome é obrigatório'); return; }
+    if (master && editForm.role !== 'master' && !editForm.unidade) { setEditError('Selecione a unidade'); return; }
     setEditSaving(true); setEditError('');
     const res = await fetch(`/api/usuarios/${editUser.id}`, {
       method: 'PATCH',
@@ -147,14 +154,33 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
                 <label style={labelStyle}>E-mail (opcional)</label>
                 <input type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} placeholder="email@senai.br" style={inputStyle} />
               </div>
-              <div>
-                <label style={labelStyle}>Perfil *</label>
-                <select value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value as Role }))} style={{ ...inputStyle, background: 'white' }}>
-                  <option value="docente">Docente</option>
-                  <option value="oppp">OPP</option>
-                  <option value="coordenador">Coordenador</option>
-                </select>
-              </div>
+              {master ? (
+                <>
+                  <div>
+                    <label style={labelStyle}>Perfil *</label>
+                    <select value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value as Role }))} style={{ ...inputStyle, background: 'white' }}>
+                      <option value="docente">Docente</option>
+                      <option value="oppp">OPP</option>
+                      <option value="coordenador">Coordenador</option>
+                      <option value="master">Master</option>
+                    </select>
+                  </div>
+                  {editForm.role !== 'master' && (
+                    <div>
+                      <label style={labelStyle}>Unidade *</label>
+                      <select value={editForm.unidade} onChange={e => setEditForm(f => ({ ...f, unidade: e.target.value }))} style={{ ...inputStyle, background: 'white' }}>
+                        <option value="">Selecione...</option>
+                        {UNIDADES.map(u => <option key={u} value={u}>{u}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div>
+                  <label style={labelStyle}>Perfil</label>
+                  <input value="Docente" disabled style={{ ...inputStyle, background: '#F5F5F5', color: '#888' }} />
+                </div>
+              )}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.4rem' }}>
                 <input type="checkbox" checked={editForm.active} onChange={e => setEditForm(f => ({ ...f, active: e.target.checked }))} style={{ accentColor: '#4338CA', cursor: 'pointer' }} />
                 <label style={{ fontSize: '0.85rem', color: '#333' }}>Usuário ativo</label>
@@ -179,7 +205,9 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
                 <Users size={20} color="#4338CA" /> Usuários
               </h1>
               <p style={{ fontSize: '0.8rem', color: '#888' }}>
-                {users.filter(u => u.role === 'docente').length} docente(s) • {users.filter(u => u.role === 'oppp').length} OPP(s) • {users.filter(u => u.role === 'coordenador').length} coordenador(es)
+                {master
+                  ? `${users.filter(u => u.role === 'docente').length} docente(s) • ${users.filter(u => u.role === 'oppp').length} OPP(s) • ${users.filter(u => u.role === 'coordenador').length} coordenador(es)`
+                  : `${users.length} docente(s) da sua unidade`}
               </p>
             </div>
           </div>
@@ -209,15 +237,34 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
                   {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
-              <div>
-                <label style={labelStyle}>Perfil *</label>
-                <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value as Role }))}
-                  style={{ ...inputStyle, background: 'white' }}>
-                  <option value="docente">Docente</option>
-                  <option value="oppp">OPP</option>
-                  <option value="coordenador">Coordenador</option>
-                </select>
-              </div>
+              {master ? (
+                <>
+                  <div>
+                    <label style={labelStyle}>Perfil *</label>
+                    <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value as Role }))}
+                      style={{ ...inputStyle, background: 'white' }}>
+                      <option value="docente">Docente</option>
+                      <option value="oppp">OPP</option>
+                      <option value="coordenador">Coordenador</option>
+                      <option value="master">Master</option>
+                    </select>
+                  </div>
+                  {form.role !== 'master' && (
+                    <div>
+                      <label style={labelStyle}>Unidade *</label>
+                      <select value={form.unidade} onChange={e => setForm(f => ({ ...f, unidade: e.target.value }))} style={{ ...inputStyle, background: 'white' }}>
+                        <option value="">Selecione...</option>
+                        {UNIDADES.map(u => <option key={u} value={u}>{u}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div>
+                  <label style={labelStyle}>Perfil</label>
+                  <input value="Docente" disabled style={{ ...inputStyle, background: '#F5F5F5', color: '#888' }} />
+                </div>
+              )}
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={labelStyle}>E-mail (opcional)</label>
                 <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="email@senai.br (opcional)" style={inputStyle} />
@@ -241,7 +288,7 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
           <div style={{ textAlign: 'center', padding: '3rem', color: '#999' }}>Carregando...</div>
         ) : (
           <>
-            {(['coordenador', 'oppp', 'docente'] as Role[]).map(r => {
+            {(['master', 'coordenador', 'oppp', 'docente'] as Role[]).map(r => {
               const group = filtered.filter(u => u.role === r);
               if (group.length === 0) return null;
               const meta = roleMeta[r];
@@ -267,6 +314,11 @@ export function UsuariosClient({ userName, role }: { userName: string; role: Rol
                                 </span>
                               )}
                               <span style={{ fontSize: '0.75rem', color: '#aaa' }}>{u.email}</span>
+                              {master && u.unidade && (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.75rem', color: '#B4590E', fontWeight: 600 }}>
+                                  <Building2 size={12} /> {u.unidade}
+                                </span>
+                              )}
                               {!u.active && <span className="badge-inativo">Inativo</span>}
                             </div>
                           </div>

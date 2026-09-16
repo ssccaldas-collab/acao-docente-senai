@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, isGestor } from '@/lib/auth';
+import { getSession, isGestor, isMaster } from '@/lib/auth';
 import { getDB } from '@/lib/db';
 import { sendCycleStartedEmail } from '@/lib/mailer';
 
@@ -14,7 +14,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (semesters.length === 0) return NextResponse.json({ error: 'Semestre não encontrado' }, { status: 404 });
   const semester = semesters[0];
 
-  const teachers = await sql`SELECT id, name, email FROM users WHERE role = 'docente' AND active = TRUE`;
+  // Master gera para todos os docentes de todas as unidades; um gestor comum só para a própria.
+  const unidadeFilter = isMaster(session.role) ? null : session.unidade;
+  const teachers = await sql`
+    SELECT id, name, email FROM users
+    WHERE role = 'docente' AND active = TRUE
+      AND (${unidadeFilter}::text IS NULL OR unidade = ${unidadeFilter}::text)
+  `;
 
   const deadlineText = semester.default_stage1_deadline
     ? new Date(semester.default_stage1_deadline).toLocaleDateString('pt-BR', { timeZone: 'UTC' })

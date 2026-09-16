@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, isGestor } from '@/lib/auth';
 import { getDB } from '@/lib/db';
+import { checkCycleAccess, cycleAccessErrorResponse } from '@/lib/cycleAuth';
 import { STAGE2_CLASSROOM_OBSERVATION_QUESTIONS, validateAnswers, type FormAnswers } from '@/lib/formQuestions';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -8,14 +9,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
   const { id } = await params;
-  const sql = getDB();
-
-  const cycles = await sql`SELECT teacher_id FROM evaluation_cycles WHERE id = ${Number(id)}`;
-  if (cycles.length === 0) return NextResponse.json({ error: 'Ciclo não encontrado' }, { status: 404 });
-  if (session.role === 'docente' && cycles[0].teacher_id !== session.id) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
+  const access = await checkCycleAccess(Number(id), session);
+  if (!access.ok) {
+    const { error, status } = cycleAccessErrorResponse(access.status);
+    return NextResponse.json({ error }, { status });
   }
 
+  const sql = getDB();
   const rows = await sql`
     SELECT o.*, COALESCE(u.name, 'Usuário removido') as observed_by_name
     FROM stage2_classroom_observations o
@@ -30,6 +30,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!session || !isGestor(session.role)) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
   const { id } = await params;
+  const access = await checkCycleAccess(Number(id), session);
+  if (!access.ok) {
+    const { error, status } = cycleAccessErrorResponse(access.status);
+    return NextResponse.json({ error }, { status });
+  }
+
   const { answers, overall_comment, observation_date } = await req.json() as { answers: FormAnswers; overall_comment?: string; observation_date?: string };
 
   const errors = validateAnswers(STAGE2_CLASSROOM_OBSERVATION_QUESTIONS, answers);
@@ -37,7 +43,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const sql = getDB();
   const cycles = await sql`SELECT current_stage FROM evaluation_cycles WHERE id = ${Number(id)}`;
-  if (cycles.length === 0) return NextResponse.json({ error: 'Ciclo não encontrado' }, { status: 404 });
 
   await sql`
     INSERT INTO stage2_classroom_observations (cycle_id, observed_by, observation_date, answers, overall_comment)

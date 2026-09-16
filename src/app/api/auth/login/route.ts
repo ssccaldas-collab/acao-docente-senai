@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
     const sql = getDB();
     const users = await sql`
-      SELECT id, name, registration_number, email, password_hash, role, active, must_change_password
+      SELECT id, name, registration_number, email, password_hash, role, active, must_change_password, unidade
       FROM users
       WHERE registration_number = ${identifier} OR LOWER(email) = LOWER(${identifier})
       LIMIT 1
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
     const token = await signToken({
       id: user.id, name: user.name, email: user.email, role: user.role,
-      mustChangePassword: user.must_change_password,
+      mustChangePassword: user.must_change_password, unidade: user.unidade ?? null,
     });
 
     const response = NextResponse.json({ role: user.role, name: user.name, mustChangePassword: user.must_change_password });

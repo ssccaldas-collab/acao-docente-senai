@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, isGestor } from '@/lib/auth';
 import { getDB } from '@/lib/db';
+import { checkCycleAccess, cycleAccessErrorResponse } from '@/lib/cycleAuth';
 import { sendCycleStartedEmail } from '@/lib/mailer';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -8,8 +9,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!session || !isGestor(session.role)) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
   const { id } = await params;
-  const sql = getDB();
+  const access = await checkCycleAccess(Number(id), session);
+  if (!access.ok) {
+    const { error, status } = cycleAccessErrorResponse(access.status);
+    return NextResponse.json({ error }, { status });
+  }
 
+  const sql = getDB();
   const cycles = await sql`
     SELECT ec.teacher_id, ec.semester_id, ec.stage1_deadline, ec.stage2_deadline, u.name as teacher_name, u.email as teacher_email
     FROM evaluation_cycles ec JOIN users u ON u.id = ec.teacher_id

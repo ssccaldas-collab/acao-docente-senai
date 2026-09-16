@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
 import { getSession } from '@/lib/auth';
 import { getDB } from '@/lib/db';
+import { checkCycleAccess, cycleAccessErrorResponse } from '@/lib/cycleAuth';
 import { sendDocumentUploadedEmail } from '@/lib/mailer';
 
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
@@ -20,14 +21,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
   const { id } = await params;
-  const sql = getDB();
-
-  const cycles = await sql`SELECT teacher_id FROM evaluation_cycles WHERE id = ${Number(id)}`;
-  if (cycles.length === 0) return NextResponse.json({ error: 'Ciclo não encontrado' }, { status: 404 });
-  if (session.role === 'docente' && cycles[0].teacher_id !== session.id) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
+  const access = await checkCycleAccess(Number(id), session);
+  if (!access.ok) {
+    const { error, status } = cycleAccessErrorResponse(access.status);
+    return NextResponse.json({ error }, { status });
   }
 
+  const sql = getDB();
   const docs = await sql`
     SELECT id, document_type, file_name, size_bytes, content_type, uploaded_at, uploaded_by
     FROM documents

@@ -25,6 +25,9 @@ export async function initDB() {
     )
   `;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT TRUE`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS unidade VARCHAR(20)`;
+  await sql`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`;
+  await sql`ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('docente','oppp','coordenador','master'))`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS semesters (

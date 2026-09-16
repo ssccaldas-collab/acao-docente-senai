@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { del } from '@vercel/blob';
-import { getSession, isGestor } from '@/lib/auth';
+import { getSession, isGestor, canAccessUnidade } from '@/lib/auth';
 import { getDB } from '@/lib/db';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       ec.stage1_deadline, ec.stage2_deadline, ec.stage3_deadline, ec.stage4_deadline,
       ec.comprovante_blob_pathname, ec.comprovante_generated_at,
       ec.created_at, ec.updated_at,
-      t.id as teacher_id, t.name as teacher_name, t.email as teacher_email,
+      t.id as teacher_id, t.name as teacher_name, t.email as teacher_email, t.unidade as teacher_unidade,
       m.id as manager_id, m.name as manager_name,
       s.id as semester_id, s.label as semester_label
     FROM evaluation_cycles ec
@@ -27,9 +27,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   `;
 
   if (rows.length === 0) return NextResponse.json({ error: 'Ciclo não encontrado' }, { status: 404 });
-  const cycle = rows[0] as { teacher_id: number };
+  const cycle = rows[0] as { teacher_id: number; teacher_unidade: string | null };
 
   if (session.role === 'docente' && cycle.teacher_id !== session.id) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
+  }
+  if (isGestor(session.role) && !canAccessUnidade(session, cycle.teacher_unidade)) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
   }
 
@@ -41,8 +44,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!session || !isGestor(session.role)) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
   const { id } = await params;
-  const { stage1_deadline, stage2_deadline, stage3_deadline, stage4_deadline } = await req.json();
   const sql = getDB();
+
+  const cycles = await sql`
+    SELECT t.unidade as teacher_unidade FROM evaluation_cycles ec JOIN users t ON t.id = ec.teacher_id WHERE ec.id = ${Number(id)}
+  `;
+  if (cycles.length === 0) return NextResponse.json({ error: 'Ciclo não encontrado' }, { status: 404 });
+  if (!canAccessUnidade(session, cycles[0].teacher_unidade)) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
+  }
+
+  const { stage1_deadline, stage2_deadline, stage3_deadline, stage4_deadline } = await req.json();
 
   await sql`
     UPDATE evaluation_cycles SET
@@ -64,8 +76,15 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const { id } = await params;
   const sql = getDB();
 
-  const cycles = await sql`SELECT comprovante_blob_pathname FROM evaluation_cycles WHERE id = ${Number(id)}`;
+  const cycles = await sql`
+    SELECT ec.comprovante_blob_pathname, t.unidade as teacher_unidade
+    FROM evaluation_cycles ec JOIN users t ON t.id = ec.teacher_id
+    WHERE ec.id = ${Number(id)}
+  `;
   if (cycles.length === 0) return NextResponse.json({ error: 'Ciclo não encontrado' }, { status: 404 });
+  if (!canAccessUnidade(session, cycles[0].teacher_unidade)) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
+  }
 
   const docs = await sql`SELECT blob_pathname FROM documents WHERE cycle_id = ${Number(id)}`;
   const pathnames = [

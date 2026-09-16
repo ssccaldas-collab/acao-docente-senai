@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, isGestor } from '@/lib/auth';
+import { getSession, isGestor, isMaster } from '@/lib/auth';
 import { getDB } from '@/lib/db';
 import { sendCycleStartedEmail } from '@/lib/mailer';
 
@@ -15,13 +15,15 @@ export async function GET(req: NextRequest) {
   const sql = getDB();
 
   const teacherFilter = session.role === 'docente' ? session.id : (docenteId ? Number(docenteId) : null);
+  // Master vê todas as unidades; um gestor comum só vê docentes da própria unidade.
+  const unidadeFilter = isMaster(session.role) ? null : session.unidade;
 
   const rows = await sql`
     SELECT
       ec.id, ec.current_stage, ec.status,
       ec.stage1_deadline, ec.stage2_deadline, ec.stage3_deadline, ec.stage4_deadline,
       ec.created_at, ec.updated_at,
-      t.id as teacher_id, t.name as teacher_name,
+      t.id as teacher_id, t.name as teacher_name, t.unidade as teacher_unidade,
       m.id as manager_id, m.name as manager_name,
       s.id as semester_id, s.label as semester_label,
       (SELECT COUNT(*) FROM documents d WHERE d.cycle_id = ec.id) as document_count
@@ -32,6 +34,7 @@ export async function GET(req: NextRequest) {
     WHERE (${semestreId}::int IS NULL OR ec.semester_id = ${semestreId}::int)
       AND (${status}::text IS NULL OR ec.status = ${status}::text)
       AND (${teacherFilter}::int IS NULL OR ec.teacher_id = ${teacherFilter}::int)
+      AND (${unidadeFilter}::text IS NULL OR t.unidade = ${unidadeFilter}::text)
     ORDER BY t.name
   `;
 
@@ -49,9 +52,13 @@ export async function POST(req: NextRequest) {
 
   const sql = getDB();
 
-  const teachers = await sql`SELECT id, name, email FROM users WHERE id = ${teacher_id} AND role = 'docente' AND active = TRUE`;
+  const teachers = await sql`SELECT id, name, email, unidade FROM users WHERE id = ${teacher_id} AND role = 'docente' AND active = TRUE`;
   if (teachers.length === 0) return NextResponse.json({ error: 'Docente não encontrado ou inativo' }, { status: 404 });
   const teacher = teachers[0];
+
+  if (!isMaster(session.role) && teacher.unidade !== session.unidade) {
+    return NextResponse.json({ error: 'Você só pode iniciar a Ação Docente de professores da sua unidade' }, { status: 403 });
+  }
 
   const semesters = await sql`SELECT * FROM semesters WHERE id = ${semester_id}`;
   if (semesters.length === 0) return NextResponse.json({ error: 'Semestre não encontrado' }, { status: 404 });

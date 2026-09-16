@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { SenaiLogo } from './SenaiLogo';
-import { LayoutDashboard, GraduationCap, CalendarDays, Users, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, CalendarDays, Users, LogOut, User, Crown } from 'lucide-react';
 import type { Role } from '@/lib/auth';
 
 interface NavItem {
@@ -26,6 +26,7 @@ const roleLabels: Record<Role, string> = {
   docente: 'Docente',
   oppp: 'OPP',
   coordenador: 'Coordenador',
+  master: 'Master',
 };
 
 export function Sidebar({ userName, role }: { userName?: string; role?: Role }) {
@@ -39,12 +40,17 @@ export function Sidebar({ userName, role }: { userName?: string; role?: Role }) 
   }
 
   const initials = userName?.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase() ?? '';
-  const accentColor = role === 'docente' ? '#2E7D32' : '#4338CA';
+  const isMasterRole = role === 'master';
+  const accentColor = isMasterRole ? '#D9922E' : role === 'docente' ? '#2E7D32' : '#4338CA';
+  const sidebarBg = isMasterRole
+    ? 'linear-gradient(180deg, #000000 0%, #0A0A0A 55%, #241705 100%)'
+    : 'linear-gradient(180deg, #211C5C 0%, #130F35 100%)';
+  const activeDotColor = isMasterRole ? '#F0AC66' : '#69F0AE';
 
   return (
     <aside className="sidebar" style={{
       position: 'fixed', top: 0, left: 0, bottom: 0,
-      background: 'linear-gradient(180deg, #211C5C 0%, #130F35 100%)',
+      background: sidebarBg,
       display: 'flex', flexDirection: 'column',
       boxShadow: '2px 0 8px rgba(0,0,0,0.2)', zIndex: 100,
     }}>
@@ -58,6 +64,12 @@ export function Sidebar({ userName, role }: { userName?: string; role?: Role }) 
         <div className="sidebar-label">
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>Sistema de</p>
           <p style={{ color: 'white', fontSize: '0.82rem', fontWeight: 700, letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>AÇÃO DOCENTE</p>
+          {isMasterRole && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.4rem', background: '#000000', border: '1px solid rgba(217,146,46,0.6)', borderRadius: '999px', padding: '0.2rem 0.55rem', width: 'fit-content' }}>
+              <Crown size={11} color={accentColor} />
+              <span style={{ color: accentColor, fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.05em' }}>MASTER</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -70,18 +82,19 @@ export function Sidebar({ userName, role }: { userName?: string; role?: Role }) 
               title={item.label}
               style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
-                padding: '0.6rem 0.7rem', borderRadius: '0.6rem', border: 'none', cursor: 'pointer',
-                background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
+                padding: '0.6rem 0.7rem', borderRadius: '0.6rem', cursor: 'pointer',
+                border: active && isMasterRole ? '1px solid rgba(240,172,102,0.35)' : 'none',
+                background: active ? (isMasterRole ? 'rgba(240,172,102,0.12)' : 'rgba(255,255,255,0.12)') : 'transparent',
                 color: active ? 'white' : 'rgba(255,255,255,0.6)',
                 fontWeight: active ? 700 : 500, fontSize: '0.85rem',
                 textAlign: 'left', transition: 'background 0.15s, color 0.15s', width: '100%',
               }}
-              onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'white'; } }}
+              onMouseEnter={e => { if (!active) { e.currentTarget.style.background = isMasterRole ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'white'; } }}
               onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; } }}
             >
               <Icon size={18} style={{ flexShrink: 0 }} />
               <span className="sidebar-label" style={{ whiteSpace: 'nowrap' }}>{item.label}</span>
-              {active && <div className="sidebar-label" style={{ width: 6, height: 6, borderRadius: '50%', background: '#69F0AE', marginLeft: 'auto', flexShrink: 0 }} />}
+              {active && <div className="sidebar-label" style={{ width: 6, height: 6, borderRadius: '50%', background: activeDotColor, marginLeft: 'auto', flexShrink: 0 }} />}
             </button>
           );
         })}
@@ -92,7 +105,8 @@ export function Sidebar({ userName, role }: { userName?: string; role?: Role }) 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <div style={{
               width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-              background: accentColor, border: '2px solid rgba(255,255,255,0.3)',
+              background: isMasterRole ? '#000000' : accentColor,
+              border: isMasterRole ? `2px solid ${accentColor}` : '2px solid rgba(255,255,255,0.3)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               {initials ? <span style={{ color: 'white', fontWeight: 700, fontSize: '0.72rem' }}>{initials}</span> : <User size={14} color="white" />}
@@ -108,7 +122,7 @@ export function Sidebar({ userName, role }: { userName?: string; role?: Role }) 
               background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '0.5rem',
               padding: '0.5rem', color: 'white', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, transition: 'background 0.2s',
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(67,56,202,0.5)')}
+            onMouseEnter={e => (e.currentTarget.style.background = isMasterRole ? 'rgba(217,146,46,0.4)' : 'rgba(67,56,202,0.5)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
           >
             <LogOut size={14} />

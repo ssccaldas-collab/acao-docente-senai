@@ -139,9 +139,9 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
     <AppShell userName={userName} role={role} background="#F0F2F5">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div>
-            <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#211C5C' }}>Painel do Gestor</h1>
+            <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#211C5C' }}>{role === 'master' ? 'Painel Master' : 'Painel do Gestor'}</h1>
             <p style={{ color: '#666', fontSize: '0.88rem', marginTop: '0.2rem' }}>
-              {activeSemester ? `Semestre ${activeSemester.label}` : 'Nenhum semestre ativo'} · Ação Docente
+              {activeSemester ? `Semestre ${activeSemester.label}` : 'Nenhum semestre ativo'} · Ação Docente{role === 'master' ? ' · Todas as unidades' : ''}
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -223,7 +223,7 @@ export function GestorDashboard({ userName, role }: { userName: string; role: Ro
 
         {/* ── HERO CARD ─────────────────────────────────────── */}
         <div style={{
-          background: 'linear-gradient(135deg, #211C5C 0%, #130F35 100%)',
+          background: role === 'master' ? 'linear-gradient(135deg, #000000 0%, #0A0A0A 55%, #2E1D07 100%)' : 'linear-gradient(135deg, #211C5C 0%, #130F35 100%)',
           borderRadius: '1.25rem',
           padding: '2rem 2.5rem',
           marginBottom: '1.5rem',
