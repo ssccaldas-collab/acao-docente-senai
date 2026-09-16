@@ -49,8 +49,9 @@ function wrapEmail(opts: {
   title: string;
   bodyHtml: string;
   ctaLabel?: string;
+  ctaHref?: string;
 }) {
-  const { emoji, kicker, accent, title, bodyHtml, ctaLabel } = opts;
+  const { emoji, kicker, accent, title, bodyHtml, ctaLabel, ctaHref } = opts;
   const { bg, color, button } = ACCENTS[accent];
   const font = "Arial, Helvetica, sans-serif";
 
@@ -81,7 +82,7 @@ function wrapEmail(opts: {
             <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:22px;">
               <tr>
                 <td style="background:${button};border-radius:8px;">
-                  <a href="${APP_URL}" style="display:inline-block;padding:11px 22px;font-family:${font};font-size:14px;font-weight:700;color:#FFFFFF;text-decoration:none;">${ctaLabel} →</a>
+                  <a href="${ctaHref || APP_URL}" style="display:inline-block;padding:11px 22px;font-family:${font};font-size:14px;font-weight:700;color:#FFFFFF;text-decoration:none;">${ctaLabel} →</a>
                 </td>
               </tr>
             </table>` : ''}
@@ -164,6 +165,20 @@ export async function sendDocumentUploadedEmail(to: string, teacherName: string,
       title: 'Novo documento enviado por um docente',
       bodyHtml: `<p style="margin:0;">O docente <b>${teacherName}</b> enviou um documento (${fileName}) para a Etapa 1 (Documentação) da Ação Docente. Acesse o sistema para avaliar e decidir se avança para a próxima etapa.</p>`,
       ctaLabel: 'Avaliar documentação',
+    })
+  );
+}
+
+export async function sendPasswordResetEmail(to: string, name: string, resetLink: string) {
+  await sendMail(
+    to,
+    '🔑 Ação Docente — redefinição de senha',
+    wrapEmail({
+      emoji: '🔑', kicker: 'REDEFINIR SENHA', accent: 'indigo',
+      title: 'Redefinição de senha solicitada',
+      bodyHtml: `<p style="margin:0 0 12px;">Olá, ${name}.</p><p style="margin:0;">Recebemos um pedido para redefinir a senha da sua conta no Sistema de Ação Docente. Clique no botão abaixo para criar uma nova senha. Este link expira em <b>1 hora</b>.</p><p style="margin:12px 0 0;font-size:12px;color:#9A9CBC;">Se você não pediu isso, pode ignorar este e-mail — sua senha continua a mesma.</p>`,
+      ctaLabel: 'Redefinir senha',
+      ctaHref: resetLink,
     })
   );
 }

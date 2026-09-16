@@ -6,7 +6,11 @@ export async function proxy(request: NextRequest) {
 
   if (
     pathname === '/login' ||
+    pathname === '/esqueci-senha' ||
+    pathname === '/redefinir-senha' ||
     pathname === '/api/auth/login' ||
+    pathname === '/api/auth/esqueci-senha' ||
+    pathname === '/api/auth/redefinir-senha' ||
     pathname === '/api/init' ||
     pathname.startsWith('/api/cron/')
   ) {

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { SenaiLogo } from '@/components/SenaiLogo';
 import { Eye, EyeOff, Lock, BadgeCheck, GraduationCap } from 'lucide-react';
 
@@ -169,6 +170,10 @@ export default function LoginPage() {
               >
                 {loading ? 'Entrando...' : 'ENTRAR'}
               </button>
+
+              <Link href="/esqueci-senha" style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '0.83rem', textDecoration: 'none' }}>
+                Esqueci minha senha
+              </Link>
             </form>
           </div>
 
