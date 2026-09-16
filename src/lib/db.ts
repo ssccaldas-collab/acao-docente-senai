@@ -64,6 +64,9 @@ export async function initDB() {
   `;
   await sql`ALTER TABLE evaluation_cycles ADD COLUMN IF NOT EXISTS comprovante_blob_pathname TEXT`;
   await sql`ALTER TABLE evaluation_cycles ADD COLUMN IF NOT EXISTS comprovante_generated_at TIMESTAMP`;
+  // Só o gestor que iniciou o ciclo (manager_id) pode editá-lo, a menos que autorize outro
+  // gestor da mesma unidade explicitamente via authorized_gestor_id.
+  await sql`ALTER TABLE evaluation_cycles ADD COLUMN IF NOT EXISTS authorized_gestor_id INTEGER REFERENCES users(id) ON DELETE SET NULL`;
   // Um docente pode ter mais de um ciclo por semestre ao longo do tempo (histórico de reinícios);
   // a unicidade de "ciclo ativo" é garantida pela aplicação, não pelo banco.
   await sql`ALTER TABLE evaluation_cycles DROP CONSTRAINT IF EXISTS evaluation_cycles_teacher_id_semester_id_key`;

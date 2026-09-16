@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { del } from '@vercel/blob';
 import { getSession, isGestor, canAccessUnidade } from '@/lib/auth';
 import { getDB } from '@/lib/db';
+import { checkCycleWriteAccess, cycleWriteErrorResponse } from '@/lib/cycleAuth';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -44,16 +45,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!session || !isGestor(session.role)) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
   const { id } = await params;
-  const sql = getDB();
-
-  const cycles = await sql`
-    SELECT t.unidade as teacher_unidade FROM evaluation_cycles ec JOIN users t ON t.id = ec.teacher_id WHERE ec.id = ${Number(id)}
-  `;
-  if (cycles.length === 0) return NextResponse.json({ error: 'Ciclo não encontrado' }, { status: 404 });
-  if (!canAccessUnidade(session, cycles[0].teacher_unidade)) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
+  const access = await checkCycleWriteAccess(Number(id), session);
+  if (!access.ok) {
+    const { error, status } = cycleWriteErrorResponse(access.status);
+    return NextResponse.json({ error }, { status });
   }
 
+  const sql = getDB();
   const { stage1_deadline, stage2_deadline, stage3_deadline, stage4_deadline } = await req.json();
 
   await sql`
@@ -74,17 +72,18 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!session || !isGestor(session.role)) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
   const { id } = await params;
-  const sql = getDB();
+  const access = await checkCycleWriteAccess(Number(id), session);
+  if (!access.ok) {
+    const { error, status } = cycleWriteErrorResponse(access.status);
+    return NextResponse.json({ error }, { status });
+  }
 
+  const sql = getDB();
   const cycles = await sql`
-    SELECT ec.comprovante_blob_pathname, t.unidade as teacher_unidade
-    FROM evaluation_cycles ec JOIN users t ON t.id = ec.teacher_id
+    SELECT ec.comprovante_blob_pathname
+    FROM evaluation_cycles ec
     WHERE ec.id = ${Number(id)}
   `;
-  if (cycles.length === 0) return NextResponse.json({ error: 'Ciclo não encontrado' }, { status: 404 });
-  if (!canAccessUnidade(session, cycles[0].teacher_unidade)) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
-  }
 
   const docs = await sql`SELECT blob_pathname FROM documents WHERE cycle_id = ${Number(id)}`;
   const pathnames = [

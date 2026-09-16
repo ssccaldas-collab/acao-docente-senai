@@ -6,7 +6,7 @@ import { AppShell } from '@/components/AppShell';
 import { QuestionChecklist } from '@/components/QuestionChecklist';
 import { DocumentsPanel } from '@/components/DocumentsPanel';
 import { SignaturePad } from '@/components/SignaturePad';
-import { ArrowLeft, FileText, Eye, MessageSquare, RotateCcw, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Inbox, RefreshCcw, FileDown, Pencil } from 'lucide-react';
+import { ArrowLeft, FileText, Eye, MessageSquare, RotateCcw, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Inbox, RefreshCcw, FileDown, Pencil, UserCheck, Lock } from 'lucide-react';
 import type { Role } from '@/lib/auth';
 import { STAGE1_DOCUMENTATION_QUESTIONS, STAGE2_CLASSROOM_OBSERVATION_QUESTIONS, getMissingRequiredIds, type FormAnswers, type QuestionAnswer } from '@/lib/formQuestions';
 
@@ -23,7 +23,10 @@ export interface CycleDetail {
   stage3_deadline: string | Date | null;
   stage4_deadline: string | Date | null;
   teacher_name: string;
+  manager_id: number | null;
   manager_name: string | null;
+  authorized_gestor_id: number | null;
+  authorized_gestor_name: string | null;
   semester_label: string;
   comprovante_blob_pathname: string | null;
   comprovante_generated_at: string | Date | null;
@@ -55,7 +58,7 @@ interface StageReview {
 }
 
 function ChecklistSection({
-  title, icon: Icon, questions, existing, onSave, saving, open, onToggle,
+  title, icon: Icon, questions, existing, onSave, saving, open, onToggle, canEdit,
 }: {
   title: string;
   icon: typeof FileText;
@@ -65,6 +68,7 @@ function ChecklistSection({
   saving: boolean;
   open: boolean;
   onToggle: () => void;
+  canEdit: boolean;
 }) {
   const [isEditing, setIsEditing] = useState(!existing);
   const [answers, setAnswers] = useState<FormAnswers>(existing?.answers ?? {});
@@ -130,11 +134,13 @@ function ChecklistSection({
                   <p style={{ fontSize: '0.85rem', color: '#333', whiteSpace: 'pre-wrap' }}>{existing.overall_comment}</p>
                 </div>
               )}
-              <button type="button" onClick={startEditing} className="btn-secondary" style={{ marginTop: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Pencil size={14} /> Reabrir e editar
-              </button>
+              {canEdit && (
+                <button type="button" onClick={startEditing} className="btn-secondary" style={{ marginTop: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Pencil size={14} /> Reabrir e editar
+                </button>
+              )}
             </div>
-          ) : (
+          ) : canEdit ? (
             <>
               <QuestionChecklist questions={questions} answers={answers} onChange={handleChange} disabled={saving} invalidIds={invalidIds} />
               <div style={{ marginTop: '1rem' }}>
@@ -158,6 +164,10 @@ function ChecklistSection({
                 )}
               </div>
             </>
+          ) : (
+            <p style={{ padding: '1rem 0', textAlign: 'center', color: '#999', fontSize: '0.85rem' }}>
+              Aguardando o gestor responsável preencher esta etapa.
+            </p>
           )}
         </div>
       )}
@@ -172,12 +182,13 @@ interface FeedbackSession {
   applied_by_name?: string;
 }
 
-function DevolutivaSection({ existing, onSave, saving, open, onToggle }: {
+function DevolutivaSection({ existing, onSave, saving, open, onToggle, canEdit }: {
   existing: FeedbackSession | null;
   onSave: (sessionDate: string, notes: string) => void;
   saving: boolean;
   open: boolean;
   onToggle: () => void;
+  canEdit: boolean;
 }) {
   const [isEditing, setIsEditing] = useState(!existing);
   const [sessionDate, setSessionDate] = useState(toDateInputValue(existing?.session_date ?? null));
@@ -229,11 +240,13 @@ function DevolutivaSection({ existing, onSave, saving, open, onToggle }: {
                 {existing.teacher_acknowledged ? <CheckCircle2 size={15} /> : <Circle size={15} />}
                 {existing.teacher_acknowledged ? 'Docente confirmou ciência' : 'Aguardando ciência do docente'}
               </div>
-              <button type="button" onClick={startEditing} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Pencil size={14} /> Reabrir e editar
-              </button>
+              {canEdit && (
+                <button type="button" onClick={startEditing} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Pencil size={14} /> Reabrir e editar
+                </button>
+              )}
             </div>
-          ) : (
+          ) : canEdit ? (
             <>
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Data da devolutiva *</label>
@@ -257,6 +270,10 @@ function DevolutivaSection({ existing, onSave, saving, open, onToggle }: {
                 )}
               </div>
             </>
+          ) : (
+            <p style={{ padding: '1rem 0', textAlign: 'center', color: '#999', fontSize: '0.85rem' }}>
+              Aguardando o gestor responsável preencher esta etapa.
+            </p>
           )}
         </div>
       )}
@@ -279,12 +296,13 @@ const RESULT_LABELS: Record<string, { label: string; color: string; bg: string }
   inadequado: { label: 'Inadequado', color: '#C8102E', bg: '#FFEBEE' },
 };
 
-function ReplicaSection({ existing, onSave, saving, open, onToggle }: {
+function ReplicaSection({ existing, onSave, saving, open, onToggle, canEdit }: {
   existing: ReplicaData | null;
   onSave: (finalResult: string, notes: string, managerSignature: string) => void;
   saving: boolean;
   open: boolean;
   onToggle: () => void;
+  canEdit: boolean;
 }) {
   const [isEditing, setIsEditing] = useState(!existing);
   const [finalResult, setFinalResult] = useState(existing?.final_result ?? 'adequado');
@@ -367,14 +385,18 @@ function ReplicaSection({ existing, onSave, saving, open, onToggle }: {
                 )}
               </div>
 
-              <button type="button" onClick={startEditing} className="btn-secondary" style={{ marginTop: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Pencil size={14} /> Reabrir e editar
-              </button>
-              <p style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.4rem' }}>
-                Reabrir exige uma nova assinatura do gestor{existing.docente_signature ? ' e uma nova confirmação do docente' : ''}.
-              </p>
+              {canEdit && (
+                <>
+                  <button type="button" onClick={startEditing} className="btn-secondary" style={{ marginTop: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Pencil size={14} /> Reabrir e editar
+                  </button>
+                  <p style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.4rem' }}>
+                    Reabrir exige uma nova assinatura do gestor{existing.docente_signature ? ' e uma nova confirmação do docente' : ''}.
+                  </p>
+                </>
+              )}
             </div>
-          ) : (
+          ) : canEdit ? (
             <>
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Resultado final *</label>
@@ -415,6 +437,8 @@ function ReplicaSection({ existing, onSave, saving, open, onToggle }: {
               {!signature && <p style={{ fontSize: '0.72rem', color: '#C62828', marginTop: '0.4rem' }}>Desenhe a assinatura para poder salvar.</p>}
               {existing && <p style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.4rem' }}>Ao salvar, a assinatura do docente será solicitada novamente.</p>}
             </>
+          ) : (
+            <p style={{ padding: '1rem 0', textAlign: 'center', color: '#999', fontSize: '0.85rem' }}>Aguardando o gestor responsável preencher esta etapa.</p>
           )}
         </div>
       )}
@@ -453,11 +477,13 @@ function AdvanceStage1Panel({ documentCount, onAdvance, advancing }: { documentC
   );
 }
 
-export function CicloGestorClient({ userName, role, cycle }: { userName: string; role: Role; cycle: CycleDetail }) {
+export function CicloGestorClient({ userName, userId, role, cycle }: { userName: string; userId: number; role: Role; cycle: CycleDetail }) {
   const router = useRouter();
   const deadlines = [cycle.stage1_deadline, cycle.stage2_deadline, cycle.stage3_deadline, cycle.stage4_deadline];
   const isConcluded = cycle.status === 'concluido';
   const isArchived = cycle.status === 'cancelado';
+  const isOwner = cycle.manager_id === null || cycle.manager_id === userId;
+  const canEdit = role === 'master' || isOwner || cycle.authorized_gestor_id === userId;
 
   const [stage1, setStage1] = useState<StageReview | null>(null);
   const [stage2, setStage2] = useState<StageReview | null>(null);
@@ -471,6 +497,9 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
   const [generatingComprovante, setGeneratingComprovante] = useState(false);
   const [error, setError] = useState('');
   const [version, setVersion] = useState(0);
+  const [colegas, setColegas] = useState<{ id: number; name: string }[]>([]);
+  const [authorizing, setAuthorizing] = useState(false);
+  const canManageAuthorization = role === 'master' || isOwner;
 
   async function load() {
     const [s1, s2, s3, s4, docs] = await Promise.all([
@@ -518,6 +547,21 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
   // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- data fetch on mount, setState happens inside the async callback, not synchronously
   useEffect(() => { load(); }, []);
 
+  useEffect(() => {
+    if (!canManageAuthorization) return;
+    fetch(`/api/ciclos/${cycle.id}/colegas`).then(r => r.json()).then(data => { if (Array.isArray(data)) setColegas(data); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetch on mount only
+  }, [canManageAuthorization]);
+
+  async function autorizar(targetId: number | null) {
+    setAuthorizing(true); setError('');
+    const res = await fetch(`/api/ciclos/${cycle.id}/autorizar`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ authorized_gestor_id: targetId }) });
+    const data = await res.json();
+    setAuthorizing(false);
+    if (!res.ok) { setError(data.error); return; }
+    router.refresh();
+  }
+
   async function submit(stage: number, url: string, body: unknown) {
     setSaving(stage); setError('');
     const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -538,10 +582,15 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#211C5C' }}>{cycle.teacher_name}</h1>
             <p style={{ fontSize: '0.8rem', color: '#888' }}>
-              Semestre {cycle.semester_label} {cycle.manager_name ? `· Gestor: ${cycle.manager_name}` : ''}
+              Semestre {cycle.semester_label} {cycle.manager_name ? `· Iniciado por: ${cycle.manager_name}` : ''} {cycle.authorized_gestor_name ? `· Autorizado: ${cycle.authorized_gestor_name}` : ''}
             </p>
           </div>
-          {!isArchived && (
+          {!canEdit && !isConcluded && !isArchived && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#F5F5F5', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.4rem 0.75rem', fontSize: '0.78rem', color: '#888', fontWeight: 600 }}>
+              <Lock size={13} /> Somente leitura
+            </span>
+          )}
+          {!isArchived && canEdit && (
             <button onClick={reiniciarCiclo} disabled={restarting}
               style={{
                 display: 'flex', alignItems: 'center', gap: '0.4rem',
@@ -626,11 +675,13 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
                 <a href={`/api/ciclos/${cycle.id}/comprovante/download`} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ textDecoration: 'none' }}>
                   <FileDown size={15} /> Baixar PDF
                 </a>
-                <button onClick={gerarComprovante} disabled={generatingComprovante} className="btn-secondary">
-                  {generatingComprovante ? 'Gerando...' : 'Gerar novamente'}
-                </button>
+                {canEdit && (
+                  <button onClick={gerarComprovante} disabled={generatingComprovante} className="btn-secondary">
+                    {generatingComprovante ? 'Gerando...' : 'Gerar novamente'}
+                  </button>
+                )}
               </div>
-            ) : stage4?.docente_signature ? (
+            ) : stage4?.docente_signature && canEdit ? (
               <button onClick={gerarComprovante} disabled={generatingComprovante} className="btn-primary">
                 {generatingComprovante ? 'Gerando...' : 'Gerar comprovante'}
               </button>
@@ -644,9 +695,31 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
           </div>
         )}
 
-        <DocumentsPanel cycleId={cycle.id} canUpload={false} canDelete={true} />
+        <DocumentsPanel cycleId={cycle.id} canUpload={false} canDelete={canEdit} />
 
-        {!isConcluded && !isArchived && cycle.current_stage === 1 && (
+        {canManageAuthorization && !isConcluded && !isArchived && (
+          <div style={{ background: 'white', border: '1px solid #E0E0E0', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#EDE7F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <UserCheck size={18} color="#5E35B1" />
+            </div>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <p style={{ fontWeight: 700, fontSize: '0.88rem', color: '#211C5C' }}>Autorizar outro gestor a editar</p>
+              <p style={{ fontSize: '0.78rem', color: '#888', marginTop: '0.1rem' }}>
+                {cycle.authorized_gestor_name ? `${cycle.authorized_gestor_name} está autorizado(a) a editar esta Ação Docente.` : 'Só você pode editar. Autorize um colega da mesma unidade para poder editar também.'}
+              </p>
+            </div>
+            <select
+              disabled={authorizing}
+              value={cycle.authorized_gestor_id ?? ''}
+              onChange={e => autorizar(e.target.value ? Number(e.target.value) : null)}
+              style={{ border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.5rem 0.75rem', fontSize: '0.85rem', minWidth: 200 }}>
+              <option value="">Ninguém autorizado</option>
+              {colegas.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+        )}
+
+        {!isConcluded && !isArchived && cycle.current_stage === 1 && canEdit && (
           <AdvanceStage1Panel documentCount={documentCount} onAdvance={avancarEtapa1} advancing={advancing} />
         )}
 
@@ -660,6 +733,7 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
           saving={saving === 1}
           open={openSection === 1}
           onToggle={() => setOpenSection(s => s === 1 ? 0 : 1)}
+          canEdit={canEdit}
         />
 
         <ChecklistSection
@@ -672,6 +746,7 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
           saving={saving === 2}
           open={openSection === 2}
           onToggle={() => setOpenSection(s => s === 2 ? 0 : 2)}
+          canEdit={canEdit}
         />
 
         <DevolutivaSection
@@ -681,6 +756,7 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
           saving={saving === 3}
           open={openSection === 3}
           onToggle={() => setOpenSection(s => s === 3 ? 0 : 3)}
+          canEdit={canEdit}
         />
 
         <ReplicaSection
@@ -690,6 +766,7 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
           saving={saving === 4}
           open={openSection === 4}
           onToggle={() => setOpenSection(s => s === 4 ? 0 : 4)}
+          canEdit={canEdit}
         />
     </AppShell>
   );

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, isGestor } from '@/lib/auth';
 import { getDB } from '@/lib/db';
-import { checkCycleAccess, cycleAccessErrorResponse } from '@/lib/cycleAuth';
+import { checkCycleAccess, cycleAccessErrorResponse, checkCycleWriteAccess, cycleWriteErrorResponse } from '@/lib/cycleAuth';
 
 const VALID_RESULTS = ['adequado', 'parcialmente_adequado', 'inadequado'];
 
@@ -31,9 +31,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!session || !isGestor(session.role)) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
   const { id } = await params;
-  const access = await checkCycleAccess(Number(id), session);
+  const access = await checkCycleWriteAccess(Number(id), session);
   if (!access.ok) {
-    const { error, status } = cycleAccessErrorResponse(access.status);
+    const { error, status } = cycleWriteErrorResponse(access.status);
     return NextResponse.json({ error }, { status });
   }
 
