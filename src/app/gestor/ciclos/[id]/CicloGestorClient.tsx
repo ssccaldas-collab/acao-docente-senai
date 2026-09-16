@@ -55,22 +55,20 @@ interface StageReview {
 }
 
 function ChecklistSection({
-  title, icon: Icon, questions, existing, onSave, saving, open, onToggle, showDate,
+  title, icon: Icon, questions, existing, onSave, saving, open, onToggle,
 }: {
   title: string;
   icon: typeof FileText;
   questions: typeof STAGE1_DOCUMENTATION_QUESTIONS;
   existing: StageReview | null;
-  onSave: (answers: FormAnswers, comment: string, date?: string) => void;
+  onSave: (answers: FormAnswers, comment: string) => void;
   saving: boolean;
   open: boolean;
   onToggle: () => void;
-  showDate?: boolean;
 }) {
   const [isEditing, setIsEditing] = useState(!existing);
   const [answers, setAnswers] = useState<FormAnswers>(existing?.answers ?? {});
   const [comment, setComment] = useState(existing?.overall_comment ?? '');
-  const [date, setDate] = useState(toDateInputValue(existing?.observation_date ?? null));
   const [invalidIds, setInvalidIds] = useState<string[]>([]);
 
   function handleChange(id: string, value: QuestionAnswer['value']) {
@@ -86,13 +84,12 @@ function ChecklistSection({
       return;
     }
     setInvalidIds([]);
-    onSave(answers, comment, date);
+    onSave(answers, comment);
   }
 
   function startEditing() {
     setAnswers(existing?.answers ?? {});
     setComment(existing?.overall_comment ?? '');
-    setDate(toDateInputValue(existing?.observation_date ?? null));
     setInvalidIds([]);
     setIsEditing(true);
   }
@@ -126,12 +123,6 @@ function ChecklistSection({
                   Etapa concluída — pode avançar. Fica bloqueada até você clicar em &quot;Reabrir e editar&quot;.
                 </p>
               </div>
-              {showDate && existing.observation_date && (
-                <div style={{ marginBottom: '1rem' }}>
-                  <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', marginBottom: '0.3rem' }}>Data da aula observada</p>
-                  <p style={{ fontSize: '0.85rem', color: '#333' }}>{fmtDate(existing.observation_date)}</p>
-                </div>
-              )}
               <QuestionChecklist questions={questions} answers={existing.answers} onChange={() => {}} disabled />
               {existing.overall_comment && (
                 <div style={{ marginTop: '1rem' }}>
@@ -145,13 +136,6 @@ function ChecklistSection({
             </div>
           ) : (
             <>
-              {showDate && (
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Data da aula observada</label>
-                  <input type="date" value={date} onChange={e => setDate(e.target.value)}
-                    style={{ border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.55rem 0.75rem', fontSize: '0.85rem', outline: 'none' }} />
-                </div>
-              )}
               <QuestionChecklist questions={questions} answers={answers} onChange={handleChange} disabled={saving} invalidIds={invalidIds} />
               <div style={{ marginTop: '1rem' }}>
                 <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Comentário geral (opcional)</label>
@@ -684,11 +668,10 @@ export function CicloGestorClient({ userName, role, cycle }: { userName: string;
           icon={Eye}
           questions={STAGE2_CLASSROOM_OBSERVATION_QUESTIONS}
           existing={stage2}
-          onSave={(answers, comment, date) => submit(2, `/api/ciclos/${cycle.id}/etapa2`, { answers, overall_comment: comment, observation_date: date })}
+          onSave={(answers, comment) => submit(2, `/api/ciclos/${cycle.id}/etapa2`, { answers, overall_comment: comment, observation_date: answers.data_aula?.value })}
           saving={saving === 2}
           open={openSection === 2}
           onToggle={() => setOpenSection(s => s === 2 ? 0 : 2)}
-          showDate
         />
 
         <DevolutivaSection
