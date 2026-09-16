@@ -57,12 +57,13 @@ function isEmptyValue(value: QuestionAnswer['value'] | undefined): boolean {
   return false;
 }
 
+export function getMissingRequiredIds(questions: FormQuestion[], answers: FormAnswers): string[] {
+  return questions.filter(q => q.required && isEmptyValue(answers[q.id]?.value)).map(q => q.id);
+}
+
 export function validateAnswers(questions: FormQuestion[], answers: FormAnswers): string[] {
-  const errors: string[] = [];
-  for (const q of questions) {
-    if (q.required && isEmptyValue(answers[q.id]?.value)) {
-      errors.push(`Pergunta obrigatória não respondida: ${q.label}`);
-    }
-  }
-  return errors;
+  const missingIds = new Set(getMissingRequiredIds(questions, answers));
+  return questions
+    .filter(q => missingIds.has(q.id))
+    .map(q => `Pergunta obrigatória não respondida: ${q.label}`);
 }

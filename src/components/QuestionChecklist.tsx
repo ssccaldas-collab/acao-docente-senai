@@ -8,9 +8,10 @@ interface Props {
   answers: FormAnswers;
   onChange: (id: string, value: QuestionAnswer['value']) => void;
   disabled?: boolean;
+  invalidIds?: string[];
 }
 
-export function QuestionChecklist({ questions, answers, onChange, disabled }: Props) {
+export function QuestionChecklist({ questions, answers, onChange, disabled, invalidIds }: Props) {
   const labelStyle = { fontSize: '0.88rem', fontWeight: 600 as const, color: '#211C5C', display: 'block' as const, marginBottom: '0.5rem' };
   const inputStyle = { width: '100%', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.55rem 0.75rem', fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' };
 
@@ -23,12 +24,16 @@ export function QuestionChecklist({ questions, answers, onChange, disabled }: Pr
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {questions.map(q => {
         const current = answers[q.id]?.value;
+        const invalid = invalidIds?.includes(q.id) ?? false;
         return (
-          <div key={q.id}>
+          <div key={q.id} id={`question-${q.id}`} style={invalid ? {
+            border: '1.5px solid #C8102E', background: '#FFF5F5', borderRadius: '0.5rem', padding: '0.75rem', margin: '-0.75rem',
+          } : undefined}>
             <label style={labelStyle}>
               {q.label}{q.required && <span style={{ color: '#C8102E' }}> *</span>}
             </label>
             {q.helpText && <p style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.4rem' }}>{q.helpText}</p>}
+            {invalid && <p style={{ fontSize: '0.75rem', color: '#C8102E', fontWeight: 600, marginBottom: '0.4rem' }}>Resposta obrigatória</p>}
 
             {q.type === 'sim_nao' && (
               <div style={{ display: 'flex', gap: '0.6rem' }}>

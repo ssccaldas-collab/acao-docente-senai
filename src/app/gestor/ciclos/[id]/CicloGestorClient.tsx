@@ -8,7 +8,11 @@ import { DocumentsPanel } from '@/components/DocumentsPanel';
 import { SignaturePad } from '@/components/SignaturePad';
 import { ArrowLeft, FileText, Eye, MessageSquare, RotateCcw, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Inbox, RefreshCcw, FileDown, Pencil } from 'lucide-react';
 import type { Role } from '@/lib/auth';
-import { STAGE1_DOCUMENTATION_QUESTIONS, STAGE2_CLASSROOM_OBSERVATION_QUESTIONS, type FormAnswers, type QuestionAnswer } from '@/lib/formQuestions';
+import { STAGE1_DOCUMENTATION_QUESTIONS, STAGE2_CLASSROOM_OBSERVATION_QUESTIONS, getMissingRequiredIds, type FormAnswers, type QuestionAnswer } from '@/lib/formQuestions';
+
+function scrollToQuestion(id: string) {
+  document.getElementById(`question-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 
 export interface CycleDetail {
   id: number;
@@ -67,15 +71,29 @@ function ChecklistSection({
   const [answers, setAnswers] = useState<FormAnswers>(existing?.answers ?? {});
   const [comment, setComment] = useState(existing?.overall_comment ?? '');
   const [date, setDate] = useState(toDateInputValue(existing?.observation_date ?? null));
+  const [invalidIds, setInvalidIds] = useState<string[]>([]);
 
   function handleChange(id: string, value: QuestionAnswer['value']) {
     setAnswers(a => ({ ...a, [id]: { value } }));
+    setInvalidIds(ids => ids.filter(i => i !== id));
+  }
+
+  function handleSaveClick() {
+    const missing = getMissingRequiredIds(questions, answers);
+    if (missing.length > 0) {
+      setInvalidIds(missing);
+      scrollToQuestion(missing[0]);
+      return;
+    }
+    setInvalidIds([]);
+    onSave(answers, comment, date);
   }
 
   function startEditing() {
     setAnswers(existing?.answers ?? {});
     setComment(existing?.overall_comment ?? '');
     setDate(toDateInputValue(existing?.observation_date ?? null));
+    setInvalidIds([]);
     setIsEditing(true);
   }
 
@@ -134,14 +152,19 @@ function ChecklistSection({
                     style={{ border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.55rem 0.75rem', fontSize: '0.85rem', outline: 'none' }} />
                 </div>
               )}
-              <QuestionChecklist questions={questions} answers={answers} onChange={handleChange} disabled={saving} />
+              <QuestionChecklist questions={questions} answers={answers} onChange={handleChange} disabled={saving} invalidIds={invalidIds} />
               <div style={{ marginTop: '1rem' }}>
                 <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Comentário geral (opcional)</label>
                 <textarea value={comment} onChange={e => setComment(e.target.value)} rows={2}
                   style={{ width: '100%', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.6rem 0.75rem', fontSize: '0.85rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
               </div>
+              {invalidIds.length > 0 && (
+                <p style={{ fontSize: '0.78rem', color: '#C8102E', fontWeight: 600, marginTop: '0.6rem' }}>
+                  Faltam {invalidIds.length} pergunta{invalidIds.length > 1 ? 's' : ''} obrigatória{invalidIds.length > 1 ? 's' : ''} — destacada{invalidIds.length > 1 ? 's' : ''} em vermelho acima.
+                </p>
+              )}
               <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-                <button onClick={() => onSave(answers, comment, date)} disabled={saving} className="btn-primary">
+                <button onClick={handleSaveClick} disabled={saving} className="btn-primary">
                   {saving ? 'Salvando...' : existing ? 'Salvar alterações' : 'Salvar e avançar'}
                 </button>
                 {existing && (
