@@ -1,12 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { getSession, isMaster } from '@/lib/auth';
 
 // Rota de diagnóstico TEMPORÁRIA — investigar falha real de envio de e-mail em produção.
 // Remover após o diagnóstico.
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session || !isMaster(session.role)) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+
+  const to = req.nextUrl.searchParams.get('to') || session.email;
 
   const envInfo = {
     SMTP_HOST: process.env.SMTP_HOST ?? null,
@@ -41,20 +43,22 @@ export async function GET() {
   let sendOk = false;
   let sendMs = 0;
   let sendError: unknown = null;
+  let sendInfo: unknown = null;
   const t1 = Date.now();
   try {
     const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@senai.br';
-    await transport.sendMail({
+    const info = await transport.sendMail({
       from: `Ação Docente SENAI <${fromAddress}>`,
-      to: session.email,
+      to,
       subject: 'Teste de diagnóstico SMTP',
       html: '<p>Teste de diagnóstico do sistema de e-mail.</p>',
     });
     sendOk = true;
+    sendInfo = { messageId: info.messageId, response: info.response, accepted: info.accepted, rejected: info.rejected };
   } catch (err) {
     sendError = err instanceof Error ? { name: err.name, message: err.message, code: (err as NodeJS.ErrnoException).code, command: (err as { command?: string }).command } : String(err);
   }
   sendMs = Date.now() - t1;
 
-  return NextResponse.json({ envInfo, verifyOk, verifyMs, verifyError, sendOk, sendMs, sendError, sentTo: session.email });
+  return NextResponse.json({ envInfo, verifyOk, verifyMs, verifyError, sendOk, sendMs, sendError, sendInfo, sentTo: to });
 }
