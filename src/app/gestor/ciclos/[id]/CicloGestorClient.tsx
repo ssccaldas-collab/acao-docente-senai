@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/AppShell';
 import { QuestionChecklist } from '@/components/QuestionChecklist';
 import { DocumentsPanel } from '@/components/DocumentsPanel';
 import { SignaturePad } from '@/components/SignaturePad';
+import { CycleAnalysisPanel } from '@/components/CycleAnalysisPanel';
 import { ArrowLeft, FileText, Eye, MessageSquare, RotateCcw, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Inbox, RefreshCcw, FileDown, Pencil, UserCheck, Lock } from 'lucide-react';
 import type { Role } from '@/lib/auth';
 import { STAGE1_DOCUMENTATION_QUESTIONS, STAGE2_CLASSROOM_OBSERVATION_QUESTIONS, STAGE3_FEEDBACK_QUESTIONS, getMissingRequiredIds, type FormAnswers, type QuestionAnswer } from '@/lib/formQuestions';
+import { buildCycleAnalysis } from '@/lib/cycleAnalysis';
 
 function scrollToQuestion(id: string) {
   document.getElementById(`question-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -524,6 +526,10 @@ export function CicloGestorClient({ userName, userId, role, cycle }: { userName:
   const [colegas, setColegas] = useState<{ id: number; name: string }[]>([]);
   const [authorizing, setAuthorizing] = useState(false);
   const canManageAuthorization = role === 'master' || isOwner;
+  const analysis = useMemo(
+    () => buildCycleAnalysis(stage1?.answers ?? null, stage2?.answers ?? null, stage3?.answers ?? null),
+    [stage1, stage2, stage3],
+  );
 
   async function load() {
     const [s1, s2, s3, s4, docs] = await Promise.all([
@@ -666,6 +672,8 @@ export function CicloGestorClient({ userName, userId, role, cycle }: { userName:
             })}
           </div>
         </div>
+
+        <CycleAnalysisPanel analysis={analysis} />
 
         {isConcluded && stage4 && (
           <div style={{
