@@ -128,6 +128,9 @@ export async function initDB() {
     )
   `;
   await sql`ALTER TABLE stage3_feedback_sessions ALTER COLUMN applied_by DROP NOT NULL`;
+  await sql`ALTER TABLE stage3_feedback_sessions ADD COLUMN IF NOT EXISTS answers JSONB`;
+  await sql`ALTER TABLE stage3_feedback_sessions ADD COLUMN IF NOT EXISTS overall_comment TEXT`;
+  await sql`ALTER TABLE stage3_feedback_sessions ALTER COLUMN notes DROP NOT NULL`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS stage4_replicas (

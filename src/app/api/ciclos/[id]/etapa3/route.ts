@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession, isGestor } from '@/lib/auth';
 import { getDB } from '@/lib/db';
 import { checkCycleAccess, cycleAccessErrorResponse, checkCycleWriteAccess, cycleWriteErrorResponse } from '@/lib/cycleAuth';
+import { STAGE3_FEEDBACK_QUESTIONS, validateAnswers, type FormAnswers } from '@/lib/formQuestions';
 import { sendFeedbackRegisteredEmail } from '@/lib/mailer';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -36,11 +37,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error }, { status });
   }
 
-  const { session_date, notes } = await req.json() as { session_date?: string; notes?: string };
+  const { answers, overall_comment } = await req.json() as { answers: FormAnswers; overall_comment?: string };
 
-  if (!session_date || !notes?.trim()) {
-    return NextResponse.json({ error: 'Data da devolutiva e apontamentos são obrigatórios' }, { status: 400 });
-  }
+  const errors = validateAnswers(STAGE3_FEEDBACK_QUESTIONS, answers);
+  if (errors.length > 0) return NextResponse.json({ error: errors.join('; ') }, { status: 400 });
 
   const sql = getDB();
   const cycles = await sql`
@@ -50,12 +50,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   `;
 
   const wasAlreadyRegistered = cycles[0].current_stage > 3;
+  const sessionDate = (answers.data?.value as string) || null;
 
   await sql`
-    INSERT INTO stage3_feedback_sessions (cycle_id, applied_by, session_date, notes)
-    VALUES (${Number(id)}, ${session.id}, ${session_date}, ${notes.trim()})
+    INSERT INTO stage3_feedback_sessions (cycle_id, applied_by, session_date, answers, overall_comment)
+    VALUES (${Number(id)}, ${session.id}, ${sessionDate}, ${JSON.stringify(answers)}, ${overall_comment || null})
     ON CONFLICT (cycle_id) DO UPDATE SET
-      applied_by = ${session.id}, session_date = ${session_date}, notes = ${notes.trim()}
+      applied_by = ${session.id}, session_date = ${sessionDate}, answers = ${JSON.stringify(answers)}, overall_comment = ${overall_comment || null}
   `;
 
   const currentStage = cycles[0].current_stage as number;

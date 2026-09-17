@@ -20,8 +20,10 @@ export interface CycleDetail {
 }
 
 interface FeedbackSession {
-  session_date: string;
-  notes: string;
+  session_date: string | null;
+  notes: string | null;
+  answers: Record<string, { value: string | number | string[] }> | null;
+  overall_comment: string | null;
   teacher_acknowledged: boolean;
   applied_by_name?: string;
 }
@@ -188,7 +190,13 @@ export function CicloDocenteClient({ userName, cycle }: { userName: string; cycl
             <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#211C5C', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <MessageSquare size={17} color="#F57F17" /> Devolutiva — {fmtDate(stage3.session_date)}
             </h3>
-            <p style={{ fontSize: '0.88rem', color: '#333', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{stage3.notes}</p>
+            <p style={{ fontSize: '0.88rem', color: '#333', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+              {(() => {
+                const conclusao = stage3.answers?.conclusao?.value;
+                return typeof conclusao === 'string' && conclusao.trim() ? conclusao : (stage3.notes ?? '');
+              })()}
+            </p>
+            {stage3.overall_comment && <p style={{ fontSize: '0.85rem', color: '#555', marginTop: '0.5rem', whiteSpace: 'pre-wrap' }}>{stage3.overall_comment}</p>}
             {stage3.applied_by_name && <p style={{ fontSize: '0.75rem', color: '#999', marginTop: '0.5rem' }}>Aplicada por {stage3.applied_by_name}</p>}
 
             {stage3.teacher_acknowledged ? (

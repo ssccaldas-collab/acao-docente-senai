@@ -1,7 +1,7 @@
 import { Document, Page, View, Text, Image, StyleSheet, renderToBuffer } from '@react-pdf/renderer';
 import { put, del } from '@vercel/blob';
 import { getDB } from './db';
-import { STAGE1_DOCUMENTATION_QUESTIONS, STAGE2_CLASSROOM_OBSERVATION_QUESTIONS, type FormAnswers, type FormQuestion } from './formQuestions';
+import { STAGE1_DOCUMENTATION_QUESTIONS, STAGE2_CLASSROOM_OBSERVATION_QUESTIONS, STAGE3_FEEDBACK_QUESTIONS, type FormAnswers, type FormQuestion } from './formQuestions';
 
 const styles = StyleSheet.create({
   page: { padding: 36, fontSize: 10, fontFamily: 'Helvetica', color: '#1a1a1a' },
@@ -76,7 +76,7 @@ interface ComprovanteData {
   closed_at: string | Date;
   stage1: { answers: FormAnswers; overall_comment: string | null; reviewed_by_name: string } | null;
   stage2: { answers: FormAnswers; overall_comment: string | null; observation_date: string | null; observed_by_name: string } | null;
-  stage3: { session_date: string; notes: string; applied_by_name: string; teacher_acknowledged: boolean } | null;
+  stage3: { session_date: string | null; notes: string | null; answers: FormAnswers | null; overall_comment: string | null; applied_by_name: string; teacher_acknowledged: boolean } | null;
   stage4: {
     final_result: string; notes: string | null;
     manager_signature: string; docente_signature: string;
@@ -135,9 +135,13 @@ function ComprovanteDocument({ data }: { data: ComprovanteData }) {
         <Text style={styles.sectionTitle}>Etapa 3 — Devolutiva</Text>
         {data.stage3 ? (
           <>
-            <Text style={styles.freeText}>{data.stage3.notes}</Text>
+            {data.stage3.answers && Object.keys(data.stage3.answers).length > 0 ? (
+              <QuestionsBlock questions={STAGE3_FEEDBACK_QUESTIONS} answers={data.stage3.answers} comment={data.stage3.overall_comment} />
+            ) : (
+              <Text style={styles.freeText}>{data.stage3.notes}</Text>
+            )}
             <Text style={{ fontSize: 8, color: '#999', marginTop: 4 }}>
-              Aplicada por {data.stage3.applied_by_name} em {new Date(data.stage3.session_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+              Aplicada por {data.stage3.applied_by_name}{data.stage3.session_date ? ` em ${new Date(data.stage3.session_date as string).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}` : ''}
               {' · '}Ciência do docente: {data.stage3.teacher_acknowledged ? 'confirmada' : 'não confirmada'}
             </Text>
           </>
@@ -190,7 +194,7 @@ export async function generateComprovantePdf(cycleId: number): Promise<Buffer | 
   const [stage1Rows, stage2Rows, stage3Rows, stage4Rows] = await Promise.all([
     sql`SELECT r.answers, r.overall_comment, COALESCE(u.name, 'Usuário removido') as reviewed_by_name FROM stage1_documentation_reviews r LEFT JOIN users u ON u.id = r.reviewed_by WHERE cycle_id = ${cycleId}`,
     sql`SELECT o.answers, o.overall_comment, o.observation_date, COALESCE(u.name, 'Usuário removido') as observed_by_name FROM stage2_classroom_observations o LEFT JOIN users u ON u.id = o.observed_by WHERE cycle_id = ${cycleId}`,
-    sql`SELECT f.session_date, f.notes, f.teacher_acknowledged, COALESCE(u.name, 'Usuário removido') as applied_by_name FROM stage3_feedback_sessions f LEFT JOIN users u ON u.id = f.applied_by WHERE cycle_id = ${cycleId}`,
+    sql`SELECT f.session_date, f.notes, f.answers, f.overall_comment, f.teacher_acknowledged, COALESCE(u.name, 'Usuário removido') as applied_by_name FROM stage3_feedback_sessions f LEFT JOIN users u ON u.id = f.applied_by WHERE cycle_id = ${cycleId}`,
     sql`SELECT r.final_result, r.notes, r.manager_signature, r.docente_signature, r.docente_signed_at, COALESCE(u.name, 'Usuário removido') as closed_by_name FROM stage4_replicas r LEFT JOIN users u ON u.id = r.closed_by WHERE cycle_id = ${cycleId}`,
   ]);
 

@@ -8,7 +8,7 @@ import { DocumentsPanel } from '@/components/DocumentsPanel';
 import { SignaturePad } from '@/components/SignaturePad';
 import { ArrowLeft, FileText, Eye, MessageSquare, RotateCcw, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Inbox, RefreshCcw, FileDown, Pencil, UserCheck, Lock } from 'lucide-react';
 import type { Role } from '@/lib/auth';
-import { STAGE1_DOCUMENTATION_QUESTIONS, STAGE2_CLASSROOM_OBSERVATION_QUESTIONS, getMissingRequiredIds, type FormAnswers, type QuestionAnswer } from '@/lib/formQuestions';
+import { STAGE1_DOCUMENTATION_QUESTIONS, STAGE2_CLASSROOM_OBSERVATION_QUESTIONS, STAGE3_FEEDBACK_QUESTIONS, getMissingRequiredIds, type FormAnswers, type QuestionAnswer } from '@/lib/formQuestions';
 
 function scrollToQuestion(id: string) {
   document.getElementById(`question-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -42,11 +42,6 @@ const STEPS = [
 function fmtDate(d: string | Date | null) {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-}
-
-function toDateInputValue(d: string | Date | null) {
-  if (!d) return '';
-  return new Date(d).toISOString().slice(0, 10);
 }
 
 interface StageReview {
@@ -176,31 +171,52 @@ function ChecklistSection({
 }
 
 interface FeedbackSession {
-  session_date: string | Date;
-  notes: string;
+  session_date: string | Date | null;
+  notes: string | null;
+  answers: FormAnswers | null;
+  overall_comment: string | null;
   teacher_acknowledged: boolean;
   applied_by_name?: string;
 }
 
 function DevolutivaSection({ existing, onSave, saving, open, onToggle, canEdit }: {
   existing: FeedbackSession | null;
-  onSave: (sessionDate: string, notes: string) => void;
+  onSave: (answers: FormAnswers, comment: string) => void;
   saving: boolean;
   open: boolean;
   onToggle: () => void;
   canEdit: boolean;
 }) {
   const [isEditing, setIsEditing] = useState(!existing);
-  const [sessionDate, setSessionDate] = useState(toDateInputValue(existing?.session_date ?? null));
-  const [notes, setNotes] = useState(existing?.notes ?? '');
+  const [answers, setAnswers] = useState<FormAnswers>(existing?.answers ?? {});
+  const [comment, setComment] = useState(existing?.overall_comment ?? '');
+  const [invalidIds, setInvalidIds] = useState<string[]>([]);
+
+  function handleChange(id: string, value: QuestionAnswer['value']) {
+    setAnswers(a => ({ ...a, [id]: { value } }));
+    setInvalidIds(ids => ids.filter(i => i !== id));
+  }
+
+  function handleSaveClick() {
+    const missing = getMissingRequiredIds(STAGE3_FEEDBACK_QUESTIONS, answers);
+    if (missing.length > 0) {
+      setInvalidIds(missing);
+      scrollToQuestion(missing[0]);
+      return;
+    }
+    setInvalidIds([]);
+    onSave(answers, comment);
+  }
 
   function startEditing() {
-    setSessionDate(toDateInputValue(existing?.session_date ?? null));
-    setNotes(existing?.notes ?? '');
+    setAnswers(existing?.answers ?? {});
+    setComment(existing?.overall_comment ?? '');
+    setInvalidIds([]);
     setIsEditing(true);
   }
 
   const locked = !!existing && !isEditing;
+  const isLegacy = !!existing && (!existing.answers || Object.keys(existing.answers).length === 0);
 
   return (
     <div style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #E0E0E0', marginBottom: '1rem', overflow: 'hidden' }}>
@@ -228,15 +244,23 @@ function DevolutivaSection({ existing, onSave, saving, open, onToggle, canEdit }
                   Etapa concluída — pode avançar. Fica bloqueada até você clicar em &quot;Reabrir e editar&quot;.
                 </p>
               </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', marginBottom: '0.3rem' }}>Data da devolutiva</p>
-                <p style={{ fontSize: '0.85rem', color: '#333' }}>{fmtDate(existing.session_date)}</p>
-              </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', marginBottom: '0.3rem' }}>Apontamentos passados ao docente</p>
-                <p style={{ fontSize: '0.85rem', color: '#333', whiteSpace: 'pre-wrap' }}>{existing.notes}</p>
-              </div>
-              <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', fontWeight: 700, color: existing.teacher_acknowledged ? '#2E7D32' : '#F57F17' }}>
+              {isLegacy ? (
+                <div style={{ marginBottom: '1rem' }}>
+                  <p style={{ fontSize: '0.7rem', color: '#999', marginBottom: '0.4rem' }}>Registro anterior ao novo formulário de devolutiva</p>
+                  <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', marginBottom: '0.3rem' }}>Data</p>
+                  <p style={{ fontSize: '0.85rem', color: '#333', marginBottom: '0.75rem' }}>{fmtDate(existing.session_date)}</p>
+                  <p style={{ fontSize: '0.85rem', color: '#333', whiteSpace: 'pre-wrap' }}>{existing.notes}</p>
+                </div>
+              ) : (
+                <QuestionChecklist questions={STAGE3_FEEDBACK_QUESTIONS} answers={existing.answers ?? {}} onChange={() => {}} disabled />
+              )}
+              {existing.overall_comment && (
+                <div style={{ marginTop: '1rem' }}>
+                  <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', marginBottom: '0.3rem' }}>Comentário geral</p>
+                  <p style={{ fontSize: '0.85rem', color: '#333', whiteSpace: 'pre-wrap' }}>{existing.overall_comment}</p>
+                </div>
+              )}
+              <div style={{ marginTop: '1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', fontWeight: 700, color: existing.teacher_acknowledged ? '#2E7D32' : '#F57F17' }}>
                 {existing.teacher_acknowledged ? <CheckCircle2 size={15} /> : <Circle size={15} />}
                 {existing.teacher_acknowledged ? 'Docente confirmou ciência' : 'Aguardando ciência do docente'}
               </div>
@@ -248,20 +272,20 @@ function DevolutivaSection({ existing, onSave, saving, open, onToggle, canEdit }
             </div>
           ) : canEdit ? (
             <>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Data da devolutiva *</label>
-                <input type="date" value={sessionDate} onChange={e => setSessionDate(e.target.value)}
-                  style={{ border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.55rem 0.75rem', fontSize: '0.85rem', outline: 'none' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Apontamentos passados ao docente *</label>
-                <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={5}
-                  placeholder="Descreva os pontos discutidos na devolutiva presencial..."
+              <QuestionChecklist questions={STAGE3_FEEDBACK_QUESTIONS} answers={answers} onChange={handleChange} disabled={saving} invalidIds={invalidIds} />
+              <div style={{ marginTop: '1rem' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#555', display: 'block', marginBottom: '0.4rem' }}>Comentário geral (opcional)</label>
+                <textarea value={comment} onChange={e => setComment(e.target.value)} rows={2}
                   style={{ width: '100%', border: '1px solid #E0E0E0', borderRadius: '0.5rem', padding: '0.6rem 0.75rem', fontSize: '0.85rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
               </div>
+              {invalidIds.length > 0 && (
+                <p style={{ fontSize: '0.78rem', color: '#C8102E', fontWeight: 600, marginTop: '0.6rem' }}>
+                  Faltam {invalidIds.length} pergunta{invalidIds.length > 1 ? 's' : ''} obrigatória{invalidIds.length > 1 ? 's' : ''} — destacada{invalidIds.length > 1 ? 's' : ''} em vermelho acima.
+                </p>
+              )}
               <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-                <button onClick={() => onSave(sessionDate, notes)} disabled={saving} className="btn-primary">
-                  {saving ? 'Salvando...' : existing ? 'Salvar alterações' : 'Registrar devolutiva e avançar'}
+                <button onClick={handleSaveClick} disabled={saving} className="btn-primary">
+                  {saving ? 'Salvando...' : existing ? 'Salvar alterações' : 'Salvar e avançar'}
                 </button>
                 {existing && (
                   <button type="button" onClick={() => setIsEditing(false)} className="btn-secondary">
@@ -752,7 +776,7 @@ export function CicloGestorClient({ userName, userId, role, cycle }: { userName:
         <DevolutivaSection
           key={`s3-${version}`}
           existing={stage3}
-          onSave={(sessionDate, notes) => submit(3, `/api/ciclos/${cycle.id}/etapa3`, { session_date: sessionDate, notes })}
+          onSave={(answers, comment) => submit(3, `/api/ciclos/${cycle.id}/etapa3`, { answers, overall_comment: comment })}
           saving={saving === 3}
           open={openSection === 3}
           onToggle={() => setOpenSection(s => s === 3 ? 0 : 3)}
